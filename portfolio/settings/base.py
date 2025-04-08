@@ -16,6 +16,8 @@ import os
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE_DIR = os.path.dirname(PROJECT_DIR)
 
+ALLOWED_HOSTS = ["172.234.109.80","quirkgeek.co.zw",'localhost','127.0.0.1']
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
