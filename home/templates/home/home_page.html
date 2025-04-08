@@ -1,0 +1,252 @@
+{% extends "_base.html" %}
+{% load wagtailcore_tags wagtailimages_tags %}
+
+{% block content %}
+<!-- Hero Section -->
+<section id="about" class="py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row items-center gap-12">
+            {% if page.profile_image %}
+            <div class="md:w-1/2 flex justify-center">
+                {% image page.profile_image fill-400x400 as profile_img %}
+                <div class="relative w-50 h-50 rounded-full overflow-hidden border-4 border-teal-500/20 shadow-xl animate-float">
+                    <img src="{{ profile_img.url }}" 
+                         alt="{{ profile_img.alt }}" 
+                         class="w-full h-full object-cover">
+                </div>
+            </div>
+            {% endif %}
+            <div class="md:w-1/2">
+                <h1 class="text-4xl md:text-5xl font-bold mb-4">
+                    Hi, I'm <span class="text-teal-600 dark:text-teal-400">{{ page.author_name }}</span>
+                    <span class="inline-block animate-wave">👋</span>
+                </h1>
+                <h2 class="text-2xl md:text-3xl font-semibold mb-6 text-gray-600 dark:text-gray-300">
+                    Full Stack Developer
+                </h2>
+                <div class="text-lg mb-8 text-gray-600 dark:text-gray-300">
+                    {{ page.intro|richtext }}
+                </div>
+                
+                <!-- Social Links -->
+                <div class="flex space-x-4 mb-8">
+                    <a href="https://www.youtube.com/@QuirkGeek" target="_blank" class="text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 transition">
+                        <i class="fab fa-youtube text-2xl"></i>
+                    </a>
+                    <a href="https://wa.me/+263786195584" target="_blank" class="text-gray-600 hover:text-green-600 dark:text-gray-300 dark:hover:text-green-400 transition">
+                        <i class="fab fa-whatsapp text-2xl"></i>
+                    </a>
+                    <a href="https://github.com/McleanMartin" target="_blank" class="text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white transition">
+                        <i class="fab fa-github text-2xl"></i>
+                    </a>
+                </div>
+                
+                {% if page.body %}
+                <div class="prose dark:prose-invert max-w-none mb-8">
+                    {% include_block page.body %}
+                </div>
+                {% endif %}
+                <div class="flex space-x-4">
+                    <a href="#contact" class="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition shadow-lg hover:shadow-teal-500/20">
+                        Contact Me
+                    </a>
+                    <a href="#projects" class="px-6 py-3 border border-teal-600 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-gray-800 rounded-lg font-medium transition">
+                        View Projects
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Skills Section -->
+<section class="py-16 bg-gray-100 dark:bg-gray-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold mb-4">My <span class="text-teal-600 dark:text-teal-400">Skills</span></h2>
+            <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                Technologies I've worked with and mastered over the years.
+            </p>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {% for tech in technologies %}
+            <div class="bg-white dark:bg-gray-700 p-6 rounded-xl shadow-md text-center hover:shadow-lg transition">
+                <div class="text-4xl mb-4 text-teal-600 dark:text-teal-400">
+                    {% if tech.icon_class %}
+                    <i class="{{ tech.icon_class }}"></i>
+                    {% else %}
+                    <i class="fas fa-code"></i>
+                    {% endif %}
+                </div>
+                <h3 class="text-xl font-semibold mb-2">{{ tech.name }}</h3>
+                <p class="text-gray-600 dark:text-gray-300">Expert level</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Projects Section -->
+<section id="projects" class="py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold mb-4">Featured <span class="text-teal-600 dark:text-teal-400">Projects</span></h2>
+            <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                Some of my best work that I'm proud to share.
+            </p>
+        </div>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for project in featured_projects %}
+            <div class="bg-white dark:bg-gray-700 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition">
+                {% if project.screenshot %}
+                <div class="h-48 bg-teal-500/10 flex items-center justify-center overflow-hidden">
+                    {% image project.screenshot fill-800x450 as screenshot %}
+                    <img src="{{ screenshot.url }}" alt="{{ screenshot.alt }}" class="w-full h-full object-cover">
+                </div>
+                {% else %}
+                <div class="h-48 bg-teal-500/10 flex items-center justify-center">
+                    <i class="fas fa-project-diagram text-6xl text-teal-600 dark:text-teal-400"></i>
+                </div>
+                {% endif %}
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-2">{{ project.title }}</h3>
+                    <p class="text-gray-600 dark:text-gray-300 mb-4">
+                        {{ project.summary }}
+                    </p>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        {% for tech in project.technologies.all %}
+                        <span class="px-3 py-1 bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-200 rounded-full text-sm">{{ tech.name }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="flex space-x-3">
+                        {% if project.github_url %}
+                        <a href="{{ project.github_url }}" target="_blank" class="text-teal-600 dark:text-teal-400 font-medium hover:underline inline-flex items-center">
+                            Code <i class="fas fa-external-link-alt ml-1 text-sm"></i>
+                        </a>
+                        {% endif %}
+                        {% if project.live_url %}
+                        <a href="{{ project.live_url }}" target="_blank" class="text-teal-600 dark:text-teal-400 font-medium hover:underline inline-flex items-center">
+                            Live Demo <i class="fas fa-external-link-alt ml-1 text-sm"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Blog Section with Pagination -->
+<section id="blog" class="py-20 bg-gray-100 dark:bg-gray-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold mb-4">Latest <span class="text-teal-600 dark:text-teal-400">Blog Posts</span></h2>
+            <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                Thoughts, tutorials, and insights from my development journey.
+            </p>
+        </div>
+        
+        <!-- Blog Posts Grid -->
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+            {% for post in recent_posts %}
+            <div class="bg-white dark:bg-gray-700 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition transform hover:-translate-y-1">
+                {% if post.cover_image %}
+                <div class="h-48 overflow-hidden">
+                    {% image post.cover_image fill-800x450 as cover_img %}
+                    <img src="{{ cover_img.url }}" alt="{{ cover_img.alt }}" class="w-full h-full object-cover">
+                </div>
+                {% else %}
+                <div class="h-48 bg-teal-500/10 flex items-center justify-center">
+                    <i class="fas fa-newspaper text-6xl text-teal-600 dark:text-teal-400"></i>
+                </div>
+                {% endif %}
+                <div class="p-6">
+                    <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
+                        <span>{{ post.date|date:"F j, Y" }}</span>
+                        {% if post.technologies.exists %}
+                        <span class="mx-2">•</span>
+                        <span>{{ post.technologies.first.name }}</span>
+                        {% endif %}
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">{{ post.title }}</h3>
+                    <p class="text-gray-600 dark:text-gray-300 mb-4">
+                        {{ post.intro }}
+                    </p>
+                    <a href="{% pageurl post %}" class="text-teal-600 dark:text-teal-400 font-medium hover:underline inline-flex items-center">
+                        Read More <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if blog_posts.paginator.num_pages > 1 %}
+        <div class="flex justify-center items-center space-x-2">
+            {% if blog_posts.has_previous %}
+                <a href="?page={{ blog_posts.previous_page_number }}#blog" class="px-4 py-2 border border-teal-600 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-gray-700 rounded-lg transition">
+                    &laquo; Prev
+                </a>
+            {% endif %}
+
+            {% for page_num in blog_posts.paginator.page_range %}
+                {% if page_num == blog_posts.number %}
+                    <span class="px-4 py-2 bg-teal-600 text-white rounded-lg font-medium">
+                        {{ page_num }}
+                    </span>
+                {% else %}
+                    <a href="?page={{ page_num }}#blog" class="px-4 py-2 border border-teal-600 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-gray-700 rounded-lg transition">
+                        {{ page_num }}
+                    </a>
+                {% endif %}
+            {% endfor %}
+
+            {% if blog_posts.has_next %}
+                <a href="?page={{ blog_posts.next_page_number }}#blog" class="px-4 py-2 border border-teal-600 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-gray-700 rounded-lg transition">
+                    Next &raquo;
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Contact Section -->
+<section id="contact" class="py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold mb-4">Get In <span class="text-teal-600 dark:text-teal-400">Touch</span></h2>
+            <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                Have a project in mind or want to collaborate? I'd love to hear from you!
+            </p>
+        </div>
+        <div class="max-w-3xl mx-auto bg-white dark:bg-gray-700 rounded-xl shadow-lg p-8">
+            <form class="space-y-6" method="POST" action="/contact/">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                        <input type="text" id="name" name="name" required class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-800 dark:text-white transition">
+                    </div>
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                        <input type="email" id="email" name="email" required class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-800 dark:text-white transition">
+                    </div>
+                </div>
+                <div>
+                    <label for="subject" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject</label>
+                    <input type="text" id="subject" name="subject" required class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-800 dark:text-white transition">
+                </div>
+                <div>
+                    <label for="message" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message</label>
+                    <textarea id="message" name="message" rows="5" required class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-800 dark:text-white transition"></textarea>
+                </div>
+                <button type="submit" class="w-full py-3 px-6 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition">
+                    Send Message
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
