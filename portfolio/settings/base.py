@@ -16,7 +16,7 @@ import os
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE_DIR = os.path.dirname(PROJECT_DIR)
 
-ALLOWED_HOSTS = ['quirkgeek.co.zw', 'www.quirkgeek.co.zw']
+ALLOWED_HOSTS = ['quirkgeek.co.zw', 'www.quirkgeek.co.zw','quirkgeek.co.zw']
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
