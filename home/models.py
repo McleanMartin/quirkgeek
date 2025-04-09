@@ -21,6 +21,48 @@ User = get_user_model()
 
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
+@register_snippet
+class Technology(index.Indexed, models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    icon_class = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Font Awesome class (e.g., 'fab fa-python')"
+    )
+    description = RichTextField(blank=True, null=True)
+    documentation_url = models.URLField(blank=True)
+    is_active = models.BooleanField(default=True)
+    
+    # Search configuration
+    search_fields = [
+        index.SearchField('name', partial_match=True),
+        index.FilterField('is_active'),
+    ]
+    
+    # Panels configuration
+    general_panels = [
+        FieldPanel('name'),
+        FieldPanel('icon_class'),
+        FieldPanel('is_active'),
+    ]
+    
+    info_panels = [
+        FieldPanel('description'),
+        FieldPanel('documentation_url'),
+    ]
+    
+    edit_handler = TabbedInterface([
+        ObjectList(general_panels, heading='General'),
+        ObjectList(info_panels, heading='Info'),
+    ])
+    
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        verbose_name_plural = "Technologies"
+        ordering = ['name']
+
 class HomePage(Page):
     author_name = models.CharField(max_length=100, default="Developer")
     intro = RichTextField(features=['bold', 'italic', 'link'], blank=True)
@@ -341,47 +383,7 @@ class Comment(models.Model):
 
 # ============== SNIPPETS ==============
 
-@register_snippet
-class Technology(index.Indexed, models.Model):
-    name = models.CharField(max_length=255, unique=True)
-    icon_class = models.CharField(
-        max_length=255,
-        blank=True,
-        help_text="Font Awesome class (e.g., 'fab fa-python')"
-    )
-    description = RichTextField(blank=True, null=True)
-    documentation_url = models.URLField(blank=True)
-    is_active = models.BooleanField(default=True)
-    
-    # Search configuration
-    search_fields = [
-        index.SearchField('name', partial_match=True),
-        index.FilterField('is_active'),
-    ]
-    
-    # Panels configuration
-    general_panels = [
-        FieldPanel('name'),
-        FieldPanel('icon_class'),
-        FieldPanel('is_active'),
-    ]
-    
-    info_panels = [
-        FieldPanel('description'),
-        FieldPanel('documentation_url'),
-    ]
-    
-    edit_handler = TabbedInterface([
-        ObjectList(general_panels, heading='General'),
-        ObjectList(info_panels, heading='Info'),
-    ])
-    
-    def __str__(self):
-        return self.name
-    
-    class Meta:
-        verbose_name_plural = "Technologies"
-        ordering = ['name']
+
 
 # ============== USER PROFILES ==============
 
