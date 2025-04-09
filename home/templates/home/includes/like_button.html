@@ -1,0 +1,7 @@
+<button class="flex items-center space-x-1 text-gray-600 dark:text-gray-400 hover:text-red-500 transition"
+        hx-post="{% url 'toggle_like' page.id %}"
+        hx-target=".like-section"
+        hx-swap="innerHTML">
+    <i class="{% if request.user in page.likes.all %}fas text-red-500{% else %}far{% endif %} fa-heart"></i>
+    <span class="like-count">{{ page.likes.count }}</span>
+</button>

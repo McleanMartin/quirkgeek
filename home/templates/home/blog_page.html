@@ -53,12 +53,15 @@
     <!-- Like/Share Section -->
     <div class="border-t border-b border-gray-200 dark:border-gray-700 py-6 mb-8">
         <div class="flex justify-between items-center">
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-4 like-section">
                 {% if request.user.is_authenticated %}
                 <button class="flex items-center space-x-1 text-gray-600 dark:text-gray-400 hover:text-red-500 transition"
                         hx-post="{% url 'toggle_like' page.id %}"
                         hx-target=".like-section"
-                        hx-swap="innerHTML">
+                        hx-swap="innerHTML"
+                        _="on click toggle .text-red-500 on <i.fa-heart/> in me
+                           then toggle .fas on <i.fa-heart/> in me
+                           then toggle .far on <i.fa-heart/> in me">
                     <i class="{% if request.user in page.likes.all %}fas text-red-500{% else %}far{% endif %} fa-heart"></i>
                     <span class="like-count">{{ page.likes.count }}</span>
                 </button>
@@ -79,7 +82,11 @@
                         onclick="window.open('https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri|urlencode }}&title={{ page.title|urlencode }}', '_blank')">
                     <i class="fab fa-linkedin"></i>
                 </button>
-                <button class="text-gray-600 dark:text-gray-400 hover:text-gray-800 transition copy-link">
+                <button class="text-gray-600 dark:text-gray-400 hover:text-gray-800 transition copy-link"
+                        _="on click writeText('{{ request.build_absolute_uri }}') to navigator.clipboard
+                           then add .text-green-500 to me
+                           then wait 2s
+                           then remove .text-green-500 from me">
                     <i class="fas fa-link"></i>
                 </button>
             </div>
@@ -91,7 +98,12 @@
         <h2 class="text-2xl font-bold mb-6">Comments (<span id="comment-count">{{ page.post_comments.count }}</span>)</h2>
         
         {% if request.user.is_authenticated %}
-        <form class="mb-8" id="comment-form" method="POST" action="{% url 'add_comment' page.id %}">
+        <form class="mb-8" id="comment-form"
+              hx-post="{% url 'add_comment' page.id %}" 
+              hx-target="#comments-list" 
+              hx-swap="afterbegin"
+              _="on htmx:afterRequest reset() me
+                 on submit if my textarea.value.trim() is empty then preventDefault()">
             {% csrf_token %}
             <div class="flex space-x-4">
                 {% if request.user.profile.avatar %}
@@ -124,9 +136,13 @@
         </div>
         {% endif %}
 
-        <div class="space-y-6" id="comments-list">
+        <div class="space-y-6" id="comments-list"
+             _="on htmx:afterSwap from #comment-form
+                set commentCount to parseInt(me.previousElementSibling.firstElementChild.textContent.match(/\d+/)[0])
+                increment commentCount
+                put 'Comments (' + commentCount + ')' into me.previousElementSibling.firstElementChild.textContent">
             {% for comment in page.post_comments.all %}
-            <div class="flex space-x-4 comment-item">
+            <div class="flex space-x-4">
                 {% if comment.user.profile.avatar %}
                 <img src="{{ comment.user.profile.avatar.url }}" alt="{{ comment.user.username }}" 
                      class="w-10 h-10 rounded-full flex-shrink-0">
@@ -145,10 +161,15 @@
                     </div>
                     <div class="flex items-center mt-2 space-x-4 text-sm">
                         {% if request.user.is_authenticated %}
-                        <button class="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition like-comment"
-                                data-comment-id="{{ comment.id }}">
+                        <button class="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition"
+                                hx-post="{% url 'toggle_comment_like' comment.id %}"
+                                hx-target="closest .flex-1"
+                                hx-swap="outerHTML"
+                                _="on click toggle .text-red-500 on <i.fa-heart/> in me
+                                   then toggle .fas on <i.fa-heart/> in me
+                                   then toggle .far on <i.fa-heart/> in me">
                             <i class="{% if request.user in comment.likes.all %}fas text-red-500{% else %}far{% endif %} fa-heart"></i>
-                            <span class="like-count">{{ comment.likes.count }}</span>
+                            <span>{{ comment.likes.count }}</span>
                         </button>
                         {% else %}
                         <a href="{% url 'account_login' %}?next={{ request.path }}" class="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition">
@@ -225,7 +246,7 @@
         background-color: #1f2937;
     }
     
-    /* Like animations */
+    /* Animation for likes */
     .animate-ping {
         animation: ping 0.5s cubic-bezier(0, 0, 0.2, 1);
     }
@@ -236,141 +257,37 @@
         100% { transform: scale(1); opacity: 1; }
     }
     
+    /* Loading states */
+    .htmx-request {
+        opacity: 0.7;
+        cursor: wait;
+    }
+    
     /* Copy link feedback */
-    .copy-success {
-        color: #10B981 !important;
+    .text-green-500 {
+        color: #10B981;
     }
 </style>
 {% endblock %}
 
 {% block extra_js %}
+<!-- Load HTMX from CDN -->
+<script src="https://unpkg.com/htmx.org@1.9.6"></script>
+<!-- Load Hyperscript from CDN -->
+<script src="https://unpkg.com/hyperscript.org@0.9.11"></script>
+
 <script>
+// Additional fallback JavaScript if needed
 document.addEventListener('DOMContentLoaded', function() {
-    // Handle comment form submission
-    const commentForm = document.getElementById('comment-form');
-    if (commentForm) {
-        commentForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            
-            fetch(this.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Create new comment element
-                    const commentsList = document.getElementById('comments-list');
-                    const emptyMessage = commentsList.querySelector('p');
-                    if (emptyMessage) {
-                        emptyMessage.remove();
-                    }
-                    
-                    const commentElement = document.createElement('div');
-                    commentElement.className = 'flex space-x-4 comment-item';
-                    commentElement.innerHTML = `
-                        ${data.user_avatar ? 
-                            `<img src="${data.user_avatar}" alt="${data.username}" class="w-10 h-10 rounded-full flex-shrink-0">` : 
-                            `<div class="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center flex-shrink-0">
-                                <span class="text-gray-600 dark:text-gray-300">${data.username[0].toUpperCase()}</span>
-                            </div>`
-                        }
-                        <div class="flex-1">
-                            <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
-                                <div class="flex justify-between items-center mb-2">
-                                    <span class="font-bold">${data.username}</span>
-                                    <span class="text-sm text-gray-500">Just now</span>
-                                </div>
-                                <p class="text-gray-700 dark:text-gray-300">${data.text}</p>
-                            </div>
-                            <div class="flex items-center mt-2 space-x-4 text-sm">
-                                <button class="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition like-comment"
-                                        data-comment-id="${data.id}">
-                                    <i class="far fa-heart"></i>
-                                    <span class="like-count">0</span>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    
-                    commentsList.prepend(commentElement);
-                    this.reset();
-                    
-                    // Update comment count
-                    const commentCount = document.getElementById('comment-count');
-                    commentCount.textContent = parseInt(commentCount.textContent) + 1;
-                    
-                    // Scroll to new comment
-                    commentElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-            });
-        });
-    }
-
-    // Handle comment likes
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.like-comment')) {
-            const button = e.target.closest('.like-comment');
-            const commentId = button.dataset.commentId;
-            const icon = button.querySelector('i');
-            const likeCount = button.querySelector('.like-count');
-            
-            // Visual feedback
-            icon.classList.add('animate-ping');
-            setTimeout(() => {
-                icon.classList.remove('animate-ping');
-            }, 500);
-            
-            // Send like request
-            fetch(`/toggle_comment_like/${commentId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update icon and count
-                    if (data.action === 'liked') {
-                        icon.classList.remove('far');
-                        icon.classList.add('fas', 'text-red-500');
-                    } else {
-                        icon.classList.remove('fas', 'text-red-500');
-                        icon.classList.add('far');
-                    }
-                    likeCount.textContent = data.total_likes;
-                }
-            });
-        }
-    });
-
-    // Handle post likes
-    document.querySelectorAll('[hx-post^="/toggle_like"]').forEach(button => {
-        button.addEventListener('click', function() {
-            const icon = this.querySelector('i');
-            icon.classList.add('animate-ping');
-            setTimeout(() => {
-                icon.classList.remove('animate-ping');
-            }, 500);
-        });
-    });
-
-    // Copy link functionality
+    // Fallback for copy link button
     document.querySelectorAll('.copy-link').forEach(button => {
         button.addEventListener('click', function() {
             navigator.clipboard.writeText('{{ request.build_absolute_uri }}')
                 .then(() => {
                     const icon = this.querySelector('i');
-                    icon.classList.add('copy-success');
+                    icon.classList.add('text-green-500');
                     setTimeout(() => {
-                        icon.classList.remove('copy-success');
+                        icon.classList.remove('text-green-500');
                     }, 2000);
                 });
         });

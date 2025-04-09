@@ -1,0 +1,28 @@
+<div class="flex space-x-4 comment-item">
+    {% if comment.user.profile.avatar %}
+    <img src="{{ comment.user.profile.avatar.url }}" alt="{{ comment.user.username }}" 
+         class="w-10 h-10 rounded-full flex-shrink-0">
+    {% else %}
+    <div class="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center flex-shrink-0">
+        <span class="text-gray-600 dark:text-gray-300">{{ comment.user.username|first|upper }}</span>
+    </div>
+    {% endif %}
+    <div class="flex-1">
+        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+            <div class="flex justify-between items-center mb-2">
+                <span class="font-bold">{{ comment.user.username }}</span>
+                <span class="text-sm text-gray-500">{{ comment.created_at|timesince }} ago</span>
+            </div>
+            <p class="text-gray-700 dark:text-gray-300">{{ comment.text }}</p>
+        </div>
+        <div class="flex items-center mt-2 space-x-4 text-sm">
+            <button class="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition like-comment"
+                    hx-post="{% url 'toggle_comment_like' comment.id %}"
+                    hx-target="closest .comment-item"
+                    hx-swap="outerHTML">
+                <i class="{% if request.user in comment.likes.all %}fas text-red-500{% else %}far{% endif %} fa-heart"></i>
+                <span>{{ comment.likes.count }}</span>
+            </button>
+        </div>
+    </div>
+</div>
