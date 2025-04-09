@@ -78,40 +78,132 @@ class BlogPageTag(TaggedItemBase):
 class BlogPage(Page):
     date = models.DateField("Post date")
     intro = models.CharField(max_length=250)
-    body = RichTextField(features=['h2', 'h3', 'bold', 'italic', 'link', 'code', 'blockquote'])
-    # technologies = models.ManyToManyField('Technology', blank=True)
-    tags = ClusterTaggableManager(through=BlogPageTag, blank=True)
+    body = RichTextField(features=[
+        # Heading levels
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        
+        # Text formatting
+        'bold', 'italic', 'underline', 'strikethrough',
+        'superscript', 'subscript',
+        
+        # Alignment
+        'left', 'center', 'right', 'justify',
+        
+        # Lists
+        'ol', 'ul', 'dl',
+        
+        # Code and quotes
+        'code', 'blockquote', 'code-block',
+        
+        # Links and media
+        'link', 'image', 'embed', 'document-link',
+        
+        # Tables
+        'table', 'table-row', 'table-cell',
+        
+        # Special features
+        'hr', 'undo', 'redo',
+        
+        # Custom features (if you have any)
+    ])
+    
+    # Relationships
+    technologies = models.ManyToManyField(
+        'Technology', 
+        blank=True,
+        related_name='blog_posts',
+        help_text="Technologies mentioned in this post"
+    )
+    
+    tags = ClusterTaggableManager(
+        through=BlogPageTag, 
+        blank=True,
+        verbose_name="Tags",
+        help_text="Add tags to categorize this post"
+    )
+    
     cover_image = models.ForeignKey(
         'wagtailimages.Image',
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='+'
+        related_name='+',
+        help_text="Featured image for this post"
     )
+    
     likes = models.ManyToManyField(
         User,
         related_name='liked_posts',
         blank=True
     )
     
+    # SEO fields
+    seo_title = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Optional. The title to appear in search results"
+    )
+    
+    search_description = models.TextField(
+        blank=True,
+        help_text="Optional. The description to appear in search results"
+    )
+    
+    # Content panels
     content_panels = Page.content_panels + [
-        FieldPanel('date'),
-        FieldPanel('intro'),
-        FieldPanel('cover_image'),
+        MultiFieldPanel([
+            FieldPanel('date'),
+            FieldPanel('intro'),
+            FieldPanel('cover_image'),
+        ], heading="Basic Information"),
+        
         FieldPanel('body'),
-        # FieldPanel('technologies'),
-        FieldPanel('tags'),
+        
+        MultiFieldPanel([
+            FieldPanel('tags'),
+            FieldPanel('technologies', widget=forms.CheckboxSelectMultiple),
+        ], heading="Categorization"),
+        
         InlinePanel('post_comments', label="Comments"),
     ]
-
+    
+    # Promote panels for SEO
+    promote_panels = [
+        MultiFieldPanel([
+            FieldPanel('seo_title'),
+            FieldPanel('search_description'),
+        ], heading="SEO settings"),
+    ]
+    
+    # Methods
     def total_likes(self):
         return self.likes.count()
     
+    def get_absolute_url(self):
+        return self.full_url
+    
+    def get_related_posts(self):
+        """Get related posts by tags or technologies"""
+        from .models import BlogPage
+        return BlogPage.objects.live().filter(
+            models.Q(tags__in=self.tags.all()) | 
+            models.Q(technologies__in=self.technologies.all())
+        ).exclude(pk=self.pk).distinct()[:3]
+    
     def get_context(self, request, *args, **kwargs):
         context = super().get_context(request, *args, **kwargs)
-        context['comments'] = self.post_comments.filter(parent__isnull=True).order_by('-created_at')
+        context.update({
+            'comments': self.post_comments.filter(parent__isnull=True).order_by('-created_at'),
+            'related_posts': self.get_related_posts(),
+            'total_likes': self.total_likes(),
+        })
         return context
-
+    
+    class Meta:
+        verbose_name = "Blog Post"
+        verbose_name_plural = "Blog Posts"
+        ordering = ['-date']
+        
 class BlogIndexPage(Page):
     intro = RichTextField(blank=True)
     
