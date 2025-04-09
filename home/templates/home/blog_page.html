@@ -2,252 +2,240 @@
 {% load wagtailcore_tags wagtailimages_tags static %}
 
 {% block content %}
-<article class="post-container max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-none sm:rounded-lg shadow-md overflow-hidden my-2 sm:my-10">
-    <!-- Post Header -->
-    <div class="post-header flex items-center p-3 sm:p-4 border-b dark:border-gray-700">
-        {% if page.owner.wagtail_userprofile.avatar %}
-        <img src="{{ page.owner.wagtail_userprofile.avatar.url }}" alt="{{ page.owner.username }}" 
-             class="post-avatar w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover mr-2 sm:mr-3">
-        {% else %}
-        <div class="post-avatar w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center mr-2 sm:mr-3">
-            <span class="text-gray-600 dark:text-gray-300 text-sm sm:text-lg">{{ page.owner.username|first|upper }}</span>
-        </div>
-        {% endif %}
-        <span class="post-username font-semibold dark:text-white text-sm sm:text-base">{{ page.owner.username }}</span>
-    </div>
-    
-    <!-- Post Image -->
-    {% if page.cover_image %}
-    {% image page.cover_image width-1000 as cover_img %}
-    <img src="{{ cover_img.url }}" alt="{{ cover_img.alt }}" 
-         class="post-image w-full object-cover h-48 sm:h-64 md:h-80 lg:h-96">
-    {% endif %}
-    
-    <!-- Post Actions -->
-    <div class="post-actions p-3 sm:p-4">
-        <div class="flex items-center space-x-3 sm:space-x-4">
-            {% if request.user.is_authenticated %}
-            <button class="action-btn like-btn" data-post-id="{{ page.id }}"
-                    hx-post="{% url 'toggle_like' page.id %}"
-                    hx-target=".like-section-{{ page.id }}"
-                    hx-swap="none"
-                    hx-trigger="click"
-                    _="on htmx:afterRequest
-                       if event.detail.successful
-                         set response to JSON.parse(event.detail.xhr.responseText)
-                         if response.liked
-                           me.querySelector('i').classList.replace('far', 'fas')
-                           me.querySelector('i').classList.add('text-red-500')
-                         else
-                           me.querySelector('i').classList.replace('fas', 'far')
-                           me.querySelector('i').classList.remove('text-red-500')
-                         end
-                         set likesCount to document.querySelector('.like-count-{{ page.id }}')
-                         set likesCount.textContent to response.total_likes + ' like' + (response.total_likes != 1 ? 's' : '')
-                       end"
-                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-                <i class="{% if request.user in page.likes.all %}fas text-red-500{% else %}far text-gray-800 dark:text-gray-200{% endif %} fa-heart text-xl sm:text-2xl"></i>
-            </button>
-            {% else %}
-            <button class="action-btn" onclick="window.location.href='{% url 'account_login' %}?next={{ request.path }}'">
-                <i class="far fa-heart text-xl sm:text-2xl text-gray-800 dark:text-gray-200"></i>
-            </button>
-            {% endif %}
-            
-            <button class="action-btn comment-btn">
-                <i class="far fa-comment text-xl sm:text-2xl text-gray-800 dark:text-gray-200"></i>
-            </button>
-        </div>
+<article class="max-w-4xl mx-auto px-4 py-8">
+    <!-- Blog Header -->
+    <header class="mb-8">
+        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">{{ page.title }}</h1>
         
-        <!-- Likes Count -->
-        <div class="like-section-{{ page.id }} post-likes mt-1 sm:mt-2 font-semibold dark:text-white text-sm sm:text-base">
-            <span class="like-count-{{ page.id }}">{{ page.likes.count }}</span> like{{ page.likes.count|pluralize }}
-        </div>
-    </div>
-    
-    <!-- Post Caption -->
-    <div class="post-caption px-3 sm:px-4 pb-1 sm:pb-2 dark:text-gray-300 text-sm sm:text-base">
-        <span class="comment-username font-semibold">{{ page.owner.username }}</span>
-        <span class="comment-text">{{ page.intro }}</span>
-    </div>
-    
-    <!-- Post Time -->
-    <div class="post-time px-3 sm:px-4 pb-2 sm:pb-3 text-xs text-gray-500 dark:text-gray-400">
-        {{ page.date|timesince }} ago
-    </div>
-    
-    <!-- Comments Section -->
-    <div class="comments-section border-t dark:border-gray-700 px-3 sm:px-4 py-2 max-h-64 sm:max-h-96 overflow-y-auto">
-        {% for comment in page.post_comments.all %}
-        <div class="comment py-2 sm:py-3 flex" data-comment-id="{{ comment.id }}">
-            {% if comment.user.profile.avatar %}
-            <img src="{{ comment.user.profile.avatar.url }}" alt="{{ comment.user.username }}" 
-                 class="comment-avatar w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover mr-2 sm:mr-3">
-            {% else %}
-            <div class="comment-avatar w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center mr-2 sm:mr-3">
-                <span class="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">{{ comment.user.username|first|upper }}</span>
-            </div>
-            {% endif %}
-            
-            <div class="comment-content flex-1">
-                <div>
-                    <span class="comment-username font-semibold text-xs sm:text-sm dark:text-white">{{ comment.user.username }}</span>
-                    <span class="comment-text text-xs sm:text-sm dark:text-gray-300">{{ comment.text }}</span>
+        <div class="flex items-center space-x-4 text-gray-600 dark:text-gray-400">
+            <div class="flex items-center">
+                {% if page.owner.wagtail_userprofile.avatar %}
+                <img src="{{ page.owner.wagtail_userprofile.avatar.url }}" alt="{{ page.owner.username }}" 
+                     class="w-10 h-10 rounded-full mr-3">
+                {% else %}
+                <div class="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center mr-3">
+                    <span class="text-gray-600 dark:text-gray-300">{{ page.owner.username|first|upper }}</span>
                 </div>
-                <div class="comment-actions flex items-center mt-0 sm:mt-1 space-x-1 sm:space-x-2">
-                    {% if request.user.is_authenticated %}
-                    <button class="comment-like-btn text-xs" 
-                            data-comment-id="{{ comment.id }}"
-                            hx-post="{% url 'toggle_comment_like' comment.id %}"
-                            hx-target=".comment-like-section-{{ comment.id }}"
-                            hx-swap="none"
-                            hx-trigger="click"
-                            _="on htmx:afterRequest
-                               if event.detail.successful
-                                 set response to JSON.parse(event.detail.xhr.responseText)
-                                 if response.liked
-                                   me.querySelector('i').classList.replace('far', 'fas')
-                                   me.querySelector('i').classList.add('text-red-500')
-                                 else
-                                   me.querySelector('i').classList.replace('fas', 'far')
-                                   me.querySelector('i').classList.remove('text-red-500')
-                                 end
-                                 set likesCount to document.querySelector('.comment-like-count-{{ comment.id }}')
-                                 set likesCount.textContent to response.total_likes
-                               end"
-                            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-                        <i class="{% if request.user in comment.likes.all %}fas text-red-500{% else %}far text-gray-800 dark:text-gray-200{% endif %} fa-heart"></i>
-                    </button>
-                    {% else %}
-                    <button class="text-xs" onclick="window.location.href='{% url 'account_login' %}?next={{ request.path }}'">
-                        <i class="far fa-heart text-gray-800 dark:text-gray-200"></i>
-                    </button>
-                    {% endif %}
-                    <span class="comment-like-section-{{ comment.id }} comment-like-count text-xs text-gray-500 dark:text-gray-400">
-                        <span class="comment-like-count-{{ comment.id }}">{{ comment.likes.count }}</span>
-                    </span>
-                </div>
+                {% endif %}
+                <span class="font-medium">{{ page.owner.username }}</span>
             </div>
+            <span>•</span>
+            <span>{{ page.date|date:"F j, Y" }}</span>
+            <span>•</span>
+            <span>{{ page.reading_time }} min read</span>
         </div>
-        {% empty %}
-        <div class="text-center py-3 text-gray-500 dark:text-gray-400 text-sm">No comments yet</div>
+    </header>
+
+    <!-- Featured Image -->
+    {% if page.cover_image %}
+    <div class="mb-8 rounded-lg overflow-hidden">
+        {% image page.cover_image width-1000 as cover_img %}
+        <img src="{{ cover_img.url }}" alt="{{ cover_img.alt }}" class="w-full h-auto">
+    </div>
+    {% endif %}
+
+    <!-- Blog Content -->
+    <div class="prose dark:prose-invert max-w-none mb-12">
+        {{ page.body|richtext }}
+    </div>
+
+    <!-- Tags -->
+    {% if page.tags.all %}
+    <div class="flex flex-wrap gap-2 mb-8">
+        {% for tag in page.tags.all %}
+        <span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-sm">
+            {{ tag }}
+        </span>
         {% endfor %}
     </div>
-    
-    <!-- Add Comment Form -->
-    {% if request.user.is_authenticated %}
-    <form class="add-comment border-t dark:border-gray-700 p-3 sm:p-4 flex items-center" 
-          hx-post="{% url 'add_comment' page.id %}"
-          hx-target=".comments-section"
-          hx-swap="afterbegin"
-          hx-trigger="submit"
-          _="on htmx:afterRequest reset() me">
-        {% csrf_token %}
-        <input type="text" 
-               class="comment-input flex-1 border rounded-full py-1 px-3 sm:py-2 sm:px-4 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 text-sm sm:text-base" 
-               name="text" 
-               placeholder="Add a comment..." 
-               _="on input set my.nextElementSibling.disabled to my.value.trim() === ''"
-               required>
-        <button type="submit" 
-                class="post-comment-btn ml-2 text-blue-500 dark:text-blue-400 font-semibold disabled:text-blue-300 dark:disabled:text-blue-600 text-sm sm:text-base" 
-                disabled>
-            Post
-        </button>
-    </form>
-    {% else %}
-    <div class="border-t dark:border-gray-700 p-3 sm:p-4 text-center">
-        <p class="text-gray-500 dark:text-gray-400 text-sm sm:text-base">
-            <a href="{% url 'account_login' %}?next={{ request.path }}" class="text-blue-500 dark:text-blue-400 font-semibold">Log in</a> to leave a comment
-        </p>
-    </div>
     {% endif %}
+
+    <!-- Like/Share Section -->
+    <div class="border-t border-b border-gray-200 dark:border-gray-700 py-6 mb-8">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                {% if request.user.is_authenticated %}
+                <button class="flex items-center space-x-1 text-gray-600 dark:text-gray-400 hover:text-red-500 transition"
+                        hx-post="{% url 'toggle_like' page.id %}"
+                        hx-target=".like-section">
+                    <i class="{% if request.user in page.likes.all %}fas text-red-500{% else %}far{% endif %} fa-heart"></i>
+                    <span class="like-count">{{ page.likes.count }}</span>
+                </button>
+                {% else %}
+                <a href="{% url 'account_login' %}?next={{ request.path }}" class="flex items-center space-x-1 text-gray-600 dark:text-gray-400 hover:text-red-500 transition">
+                    <i class="far fa-heart"></i>
+                    <span>{{ page.likes.count }}</span>
+                </a>
+                {% endif %}
+            </div>
+            
+            <div class="flex space-x-4">
+                <button class="text-gray-600 dark:text-gray-400 hover:text-blue-500 transition">
+                    <i class="fab fa-twitter"></i>
+                </button>
+                <button class="text-gray-600 dark:text-gray-400 hover:text-blue-700 transition">
+                    <i class="fab fa-linkedin"></i>
+                </button>
+                <button class="text-gray-600 dark:text-gray-400 hover:text-gray-800 transition">
+                    <i class="fas fa-link"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Author Bio -->
+    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 mb-12">
+        <div class="flex items-center space-x-4 mb-4">
+            {% if page.owner.wagtail_userprofile.avatar %}
+            <img src="{{ page.owner.wagtail_userprofile.avatar.url }}" alt="{{ page.owner.username }}" 
+                 class="w-16 h-16 rounded-full">
+            {% else %}
+            <div class="w-16 h-16 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                <span class="text-xl text-gray-600 dark:text-gray-300">{{ page.owner.username|first|upper }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Comments Section -->
+    <div class="mb-12">
+        <h2 class="text-2xl font-bold mb-6">Comments ({{ page.post_comments.count }})</h2>
+        
+        {% if request.user.is_authenticated %}
+        <form class="mb-8" method="POST" action="{% url 'add_comment' page.id %}">
+            {% csrf_token %}
+            <div class="flex space-x-4">
+                {% if request.user.profile.avatar %}
+                <img src="{{ request.user.profile.avatar.url }}" alt="{{ request.user.username }}" 
+                     class="w-10 h-10 rounded-full">
+                {% else %}
+                <div class="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                    <span class="text-gray-600 dark:text-gray-300">{{ request.user.username|first|upper }}</span>
+                </div>
+                {% endif %}
+                <div class="flex-1">
+                    <textarea name="text" rows="3" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white" placeholder="Add a comment..."></textarea>
+                    <button type="submit" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">Post Comment</button>
+                </div>
+            </div>
+        </form>
+        {% else %}
+        <div class="text-center py-6 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <p class="mb-4">Want to join the discussion?</p>
+            <a href="{% url 'account_login' %}?next={{ request.path }}" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">Log in to comment</a>
+        </div>
+        {% endif %}
+
+        <div class="space-y-6">
+            {% for comment in page.post_comments.all %}
+            <div class="flex space-x-4">
+                {% if comment.user.profile.avatar %}
+                <img src="{{ comment.user.profile.avatar.url }}" alt="{{ comment.user.username }}" 
+                     class="w-10 h-10 rounded-full flex-shrink-0">
+                {% else %}
+                <div class="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center flex-shrink-0">
+                    <span class="text-gray-600 dark:text-gray-300">{{ comment.user.username|first|upper }}</span>
+                </div>
+                {% endif %}
+                <div>
+                    <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold">{{ comment.user.username }}</span>
+                            <span class="text-sm text-gray-500">{{ comment.created_at|timesince }} ago</span>
+                        </div>
+                        <p class="text-gray-700 dark:text-gray-300">{{ comment.text }}</p>
+                    </div>
+                    <div class="flex items-center mt-2 space-x-4 text-sm">
+                        {% if request.user.is_authenticated %}
+                        <button class="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition"
+                                hx-post="{% url 'toggle_comment_like' comment.id %}"
+                                hx-target=".comment-like-{{ comment.id }}">
+                            <i class="{% if request.user in comment.likes.all %}fas text-red-500{% else %}far{% endif %} fa-heart"></i>
+                            <span class="comment-like-count-{{ comment.id }}">{{ comment.likes.count }}</span>
+                        </button>
+                        {% else %}
+                        <a href="{% url 'account_login' %}?next={{ request.path }}" class="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition">
+                            <i class="far fa-heart"></i>
+                            <span>{{ comment.likes.count }}</span>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-center text-gray-500 py-6">No comments yet. Be the first to comment!</p>
+            {% endfor %}
+        </div>
+    </div>
 </article>
 {% endblock %}
 
-<meta name="csrf-token" content="{{ csrf_token }}">
+{% block extra_css %}
+<style>
+    .prose {
+        line-height: 1.75;
+    }
+    .prose p {
+        margin-bottom: 1.5rem;
+    }
+    .prose h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-top: 2.5rem;
+        margin-bottom: 1rem;
+    }
+    .prose h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+    .prose ul, .prose ol {
+        margin-bottom: 1.5rem;
+        padding-left: 1.5rem;
+    }
+    .prose li {
+        margin-bottom: 0.5rem;
+    }
+    .prose blockquote {
+        border-left: 4px solid #e5e7eb;
+        padding-left: 1rem;
+        font-style: italic;
+        color: #6b7280;
+        margin-bottom: 1.5rem;
+    }
+    .dark .prose blockquote {
+        border-left-color: #4b5563;
+        color: #9ca3af;
+    }
+    .prose pre {
+        background-color: #f3f4f6;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        overflow-x: auto;
+        margin-bottom: 1.5rem;
+    }
+    .dark .prose pre {
+        background-color: #1f2937;
+    }
+    .prose code {
+        background-color: #f3f4f6;
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+        font-family: monospace;
+    }
+    .dark .prose code {
+        background-color: #1f2937;
+    }
+</style>
+{% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Configure HTMX to include CSRF token
-    htmx.on('htmx:configRequest', (event) => {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        event.detail.headers['X-CSRFToken'] = csrfToken;
-    });
-
-    // Handle JSON responses for comment submission
-    htmx.on('htmx:afterRequest', function(evt) {
-        if (evt.detail.elt.classList.contains('add-comment')) {
-            try {
-                const response = JSON.parse(evt.detail.xhr.responseText);
-                if (response.success) {
-                    const comment = response.comment;
-                    const commentHtml = `
-                        <div class="comment py-2 sm:py-3 flex" data-comment-id="${comment.id}">
-                            <img src="${comment.user_avatar}" alt="${comment.username}" 
-                                 class="comment-avatar w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover mr-2 sm:mr-3">
-                            <div class="comment-content flex-1">
-                                <div>
-                                    <span class="comment-username font-semibold text-xs sm:text-sm dark:text-white">${comment.username}</span>
-                                    <span class="comment-text text-xs sm:text-sm dark:text-gray-300">${comment.text}</span>
-                                </div>
-                                <div class="comment-actions flex items-center mt-0 sm:mt-1 space-x-1 sm:space-x-2">
-                                    {% if request.user.is_authenticated %}
-                                    <button class="comment-like-btn text-xs" 
-                                            data-comment-id="${comment.id}"
-                                            hx-post="/toggle-comment-like/${comment.id}/"
-                                            hx-target=".comment-like-section-${comment.id}"
-                                            hx-swap="none"
-                                            hx-trigger="click"
-                                            _="on htmx:afterRequest
-                                               if event.detail.successful
-                                                 set response to JSON.parse(event.detail.xhr.responseText)
-                                                 if response.liked
-                                                   me.querySelector('i').classList.replace('far', 'fas')
-                                                   me.querySelector('i').classList.add('text-red-500')
-                                                 else
-                                                   me.querySelector('i').classList.replace('fas', 'far')
-                                                   me.querySelector('i').classList.remove('text-red-500')
-                                                 end
-                                                 set likesCount to document.querySelector('.comment-like-count-${comment.id}')
-                                                 set likesCount.textContent to response.total_likes
-                                               end"
-                                            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-                                        <i class="far fa-heart text-gray-800 dark:text-gray-200"></i>
-                                    </button>
-                                    {% else %}
-                                    <button class="text-xs" onclick="window.location.href='{% url 'account_login' %}?next={{ request.path }}'">
-                                        <i class="far fa-heart text-gray-800 dark:text-gray-200"></i>
-                                    </button>
-                                    {% endif %}
-                                    <span class="comment-like-section-${comment.id} comment-like-count text-xs text-gray-500 dark:text-gray-400">
-                                        <span class="comment-like-count-${comment.id}">0</span>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    document.querySelector('.comments-section').insertAdjacentHTML('afterbegin', commentHtml);
-                }
-            } catch (e) {
-                console.error('Error parsing JSON response', e);
-            }
-        }
-    });
-
-    // Auto-resize comment input
-    const commentInput = document.querySelector('.comment-input');
-    if (commentInput) {
-        commentInput.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
-        });
-    }
-    
-    // Add animation to like buttons
-    document.querySelectorAll('.like-btn, .comment-like-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+    // Like functionality
+    document.querySelectorAll('[hx-post^="/toggle_like"]').forEach(button => {
+        button.addEventListener('click', function() {
             const icon = this.querySelector('i');
             icon.classList.add('animate-ping');
             setTimeout(() => {
@@ -255,92 +243,32 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 500);
         });
     });
+
+    // Comment like functionality
+    document.querySelectorAll('[hx-post^="/toggle_comment_like"]').forEach(button => {
+        button.addEventListener('click', function() {
+            const icon = this.querySelector('i');
+            icon.classList.add('animate-ping');
+            setTimeout(() => {
+                icon.classList.remove('animate-ping');
+            }, 500);
+        });
+    });
+
+    // Copy link functionality
+    document.querySelector('[aria-label="Copy link"]').addEventListener('click', function() {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url);
+        
+        const tooltip = document.createElement('div');
+        tooltip.textContent = 'Link copied!';
+        tooltip.className = 'absolute bg-gray-800 text-white px-2 py-1 rounded text-sm';
+        this.appendChild(tooltip);
+        
+        setTimeout(() => {
+            tooltip.remove();
+        }, 2000);
+    });
 });
 </script>
-{% endblock %}
-
-{% block extra_css %}
-<style>
-    .post-container {
-        max-width: 100%;
-        width: 100%;
-        margin: 0.5rem 0;
-        border-radius: 0;
-    }
-    
-    @media (min-width: 640px) {
-        .post-container {
-            max-width: 800px;
-            margin: 2.5rem auto;
-            border-radius: 0.5rem;
-        }
-    }
-    
-    .comments-section {
-        scrollbar-width: thin;
-        scrollbar-color: #e5e7eb #f9fafb;
-    }
-    
-    .comments-section::-webkit-scrollbar {
-        width: 4px;
-    }
-    
-    .comments-section::-webkit-scrollbar-track {
-        background: #f9fafb;
-    }
-    
-    .comments-section::-webkit-scrollbar-thumb {
-        background-color: #e5e7eb;
-        border-radius: 20px;
-    }
-    
-    /* Dark mode scrollbar */
-    .dark .comments-section {
-        scrollbar-color: #4b5563 #1f2937;
-    }
-    
-    .dark .comments-section::-webkit-scrollbar-track {
-        background: #1f2937;
-    }
-    
-    .dark .comments-section::-webkit-scrollbar-thumb {
-        background-color: #4b5563;
-    }
-    
-    .action-btn {
-        transition: transform 0.2s;
-    }
-    
-    .action-btn:active {
-        transform: scale(1.2);
-    }
-    
-    .like-btn:active i {
-        color: red;
-    }
-    
-    /* Improved touch targets */
-    .action-btn, .comment-like-btn {
-        padding: 0.25rem;
-        min-width: 2rem;
-        min-height: 2rem;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    /* Better spacing for mobile */
-    .comment {
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-    }
-    
-    /* Remove horizontal padding on small screens */
-    @media (max-width: 639px) {
-        .post-container {
-            border-left: none;
-            border-right: none;
-        }
-    }
-</style>
 {% endblock %}

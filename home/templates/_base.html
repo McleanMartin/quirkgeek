@@ -86,10 +86,33 @@
                 background: white !important;
             }
             .dark nav {
-                background: #1f2937 !important; /* dark:bg-gray-800 */
+                background: #1f2937 !important;
             }
         }
-      
+        
+        /* Mobile menu styles */
+        @media (max-width: 767px) {
+            #mobile-menu {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background-color: rgba(255, 255, 255, 0.95);
+                padding: 1rem;
+                border-bottom: 1px solid #e5e7eb;
+                display: none;
+                flex-direction: column;
+                align-items: flex-start;
+                z-index: 40;
+            }
+            .dark #mobile-menu {
+                background-color: rgba(31, 41, 55, 0.95);
+                border-bottom-color: #374151;
+            }
+            #mobile-menu.active {
+                display: flex;
+            }
+        }
     </style>
 </head>
 <body class="flex flex-col min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100 font-sans transition-colors duration-300">
@@ -99,12 +122,18 @@
             <div class="flex justify-between h-16 items-center">
                 <div class="flex items-center">
                     <a href="/" class="text-xl font-bold text-teal-600 dark:text-teal-400">Portfolio</a>
+                    <!-- Mobile menu button -->
+                    <button id="mobile-menu-button" class="ml-4 md:hidden p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 focus:outline-none" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobile-menu">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
                 </div>
-                <div class="flex items-center space-x-4 md:space-x-6">
-                    <a href="/#about" class="text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 transition">About</a>
-                    <a href="/#projects" class="text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 transition">Projects</a>
-                    <a href="/#blog" class="text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 transition">Blog</a>
-                    <a href="/#contact" class="text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 transition">Contact</a>
+                <div class="hidden md:flex items-center space-x-4 md:space-x-6" id="mobile-menu">
+                    <a href="/#about" class="block py-2 text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 transition">About</a>
+                    <a href="/#projects" class="block py-2 text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 transition">Projects</a>
+                    <a href="/#blog" class="block py-2 text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 transition">Blog</a>
+                    <a href="/#contact" class="block py-2 text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 transition">Contact</a>
                     
                     {% if user.is_authenticated %}
                     <!-- User dropdown -->
@@ -241,9 +270,31 @@
             });
         });
         
-        // Load critical JS immediately, defer non-critical
-        document.addEventListener('DOMContentLoaded', function() {
-            // Any additional initialization code can go here
+        // Mobile menu functionality
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('active');
+            const isExpanded = mobileMenuButton.getAttribute('aria-expanded') === 'true';
+            mobileMenuButton.setAttribute('aria-expanded', !isExpanded);
+            
+            // Change icon based on state
+            const icon = mobileMenuButton.querySelector('svg');
+            if (mobileMenu.classList.contains('active')) {
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>';
+            } else {
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>';
+            }
+        });
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!mobileMenu.contains(e.target) && e.target !== mobileMenuButton) {
+                mobileMenu.classList.remove('active');
+                mobileMenuButton.setAttribute('aria-expanded', 'false');
+                mobileMenuButton.querySelector('svg').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>';
+            }
         });
     </script>
 </body>
