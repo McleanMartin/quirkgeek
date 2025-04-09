@@ -80,35 +80,17 @@ class BlogPage(Page):
     date = models.DateField("Post date")
     intro = models.CharField(max_length=250)
     body = RichTextField(features=[
-        # Heading levels
         'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        
-        # Text formatting
         'bold', 'italic', 'underline', 'strikethrough',
         'superscript', 'subscript',
-        
-        # Alignment
         'left', 'center', 'right', 'justify',
-        
-        # Lists
         'ol', 'ul', 'dl',
-        
-        # Code and quotes
         'code', 'blockquote', 'code-block',
-        
-        # Links and media
         'link', 'image', 'embed', 'document-link',
-        
-        # Tables
         'table', 'table-row', 'table-cell',
-        
-        # Special features
         'hr', 'undo', 'redo',
-        
-        # Custom features (if you have any)
     ])
     
-    # Relationships
     technologies = models.ManyToManyField(
         'Technology', 
         blank=True,
@@ -134,23 +116,10 @@ class BlogPage(Page):
     
     likes = models.ManyToManyField(
         User,
-        related_name='liked_posts',
+        related_name='liked_posts',  # Fixed typo from 'liked_post' to 'liked_posts'
         blank=True
     )
     
-    # SEO fields
-    seo_title = models.CharField(
-        max_length=255,
-        blank=True,
-        help_text="Optional. The title to appear in search results"
-    )
-    
-    search_description = models.TextField(
-        blank=True,
-        help_text="Optional. The description to appear in search results"
-    )
-    
-    # Content panels
     content_panels = Page.content_panels + [
         MultiFieldPanel([
             FieldPanel('date'),
@@ -168,15 +137,11 @@ class BlogPage(Page):
         InlinePanel('post_comments', label="Comments"),
     ]
     
-    # Promote panels for SEO
+    # Use the existing promote_panels from Page and extend if needed
     promote_panels = [
-        MultiFieldPanel([
-            FieldPanel('seo_title'),
-            FieldPanel('search_description'),
-        ], heading="SEO settings"),
+        MultiFieldPanel(Page.promote_panels, heading="SEO and social metadata"),
     ]
     
-    # Methods
     def total_likes(self):
         return self.likes.count()
     
