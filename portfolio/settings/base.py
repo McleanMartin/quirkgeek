@@ -25,6 +25,143 @@ SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
+WAGTAILADMIN_RICH_TEXT_EDITORS = {
+    'default': {
+        'WIDGET': 'wagtail.admin.rich_text.DraftailRichTextArea',
+        'OPTIONS': {
+            'features': [
+                # Headers
+                'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                
+                # Text formatting
+                'bold', 'italic', 'underline', 'strikethrough',
+                'superscript', 'subscript',
+                
+                # Alignment
+                'left', 'center', 'right', 'justify',
+                
+                # Lists
+                'ol', 'ul', 'dl',
+                
+                # Code and quotes
+                'code', 'blockquote', 'code-block',
+                
+                # Links and media
+                'link', 'image', 'embed', 'document-link',
+                
+                # Tables
+                'table', 'table-row', 'table-cell',
+                
+                # Other
+                'hr', 'undo', 'redo',
+                
+                # Font controls
+                'fontfamily', 'fontsize', 'fontcolor', 'bgcolor'
+            ],
+            'fontFamily': {
+                'options': [
+                    {'label': 'Default', 'value': 'inherit'},
+                    {'label': 'Arial', 'value': 'Arial, sans-serif'},
+                    {'label': 'Georgia', 'value': 'Georgia, serif'},
+                    {'label': 'Courier New', 'value': 'Courier New, monospace'},
+                    {'label': 'Times New Roman', 'value': 'Times New Roman, serif'},
+                    {'label': 'Verdana', 'value': 'Verdana, sans-serif'},
+                    {'label': 'Roboto', 'value': "'Roboto', sans-serif"},
+                    {'label': 'Open Sans', 'value': "'Open Sans', sans-serif"},
+                    {'label': 'Montserrat', 'value': "'Montserrat', sans-serif"},
+                    {'label': 'Source Code Pro', 'value': "'Source Code Pro', monospace"},
+                ],
+                'default': 'inherit'
+            },
+            'fontSize': {
+                'options': [
+                    {'label': 'Small', 'value': '12px'},
+                    {'label': 'Normal', 'value': '16px'},
+                    {'label': 'Medium', 'value': '20px'},
+                    {'label': 'Large', 'value': '24px'},
+                    {'label': 'Extra Large', 'value': '32px'},
+                    {'label': 'Huge', 'value': '48px'},
+                ],
+                'default': '16px'
+            },
+            'fontColor': {
+                'colors': [
+                    '#000000',  # Black
+                    '#333333',  # Dark Gray
+                    '#666666',  # Medium Gray
+                    '#999999',  # Light Gray
+                    '#FFFFFF',  # White
+                    '#FF0000',  # Red
+                    '#00FF00',  # Green
+                    '#0000FF',  # Blue
+                    '#FF9900',  # Orange
+                    '#9900FF',  # Purple
+                ]
+            },
+            'bgColor': {
+                'colors': [
+                    'rgba(0, 0, 0, 0)',  # Transparent
+                    '#FFFFFF',  # White
+                    '#F8F9FA',  # Light gray
+                    '#E9ECEF',  # Lighter gray
+                    '#FFECB3',  # Light yellow
+                    '#C8E6C9',  # Light green
+                    '#BBDEFB',  # Light blue
+                    '#FFCCBC',  # Light orange
+                    '#D1C4E9',  # Light purple
+                ]
+            },
+            'blockTypes': {
+                'default': 'unstyled',
+                'options': [
+                    'header-one',
+                    'header-two',
+                    'header-three',
+                    'unstyled',
+                    'blockquote',
+                    'code-block',
+                ]
+            },
+            'inlineStyles': {
+                'options': [
+                    'BOLD',
+                    'ITALIC',
+                    'UNDERLINE',
+                    'STRIKETHROUGH',
+                    'CODE',
+                    'SUPERSCRIPT',
+                    'SUBSCRIPT',
+                ]
+            },
+            'entityTypes': {
+                'options': [
+                    'LINK',
+                    'IMAGE',
+                    'DOCUMENT',
+                    'EMBED',
+                    'HORIZONTAL_RULE',
+                ]
+            },
+            'enableLineBreaks': True,
+            'maxNestedElements': 5,
+            'spellCheck': True,
+            'stripPastedStyles': False,  # Allows pasting with styles
+        }
+    },
+    'minimal': {
+        'WIDGET': 'wagtail.admin.rich_text.DraftailRichTextArea',
+        'OPTIONS': {
+            'features': ['bold', 'italic', 'link', 'ol', 'ul']
+        }
+    },
+    'custom': {
+        'WIDGET': 'wagtail.admin.rich_text.DraftailRichTextArea',
+        'OPTIONS': {
+            'features': ['h2', 'h3', 'bold', 'italic', 'link', 'image']
+        }
+    }
+}
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/

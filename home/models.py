@@ -77,29 +77,53 @@ class BlogPageTag(TaggedItemBase):
     )
 
 class BlogPage(Page):
-    date = models.DateField("Post date")
-    intro = models.CharField(max_length=250)
-    body = RichTextField(features=[
-        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'bold', 'italic', 'underline', 'strikethrough',
-        'superscript', 'subscript',
-        'left', 'center', 'right', 'justify',
-        'ol', 'ul', 'dl',
-        'code', 'blockquote', 'code-block',
-        'link', 'image', 'embed', 'document-link',
-        'table', 'table-row', 'table-cell',
-        'hr', 'undo', 'redo',
-    ])
+    date = models.DateField("Post date", help_text="Publication date")
+    updated_date = models.DateField("Last updated", auto_now=True)
+    intro = models.CharField(max_length=250, help_text="Brief introduction for the post")
+    
+    body = RichTextField(
+        features=[
+            # Headers
+            'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+            
+            # Text formatting
+            'bold', 'italic', 'underline', 'strikethrough',
+            'superscript', 'subscript', 'smallcaps',
+            
+            # Alignment
+            'left', 'center', 'right', 'justify',
+            
+            # Lists
+            'ol', 'ul', 'dl',
+            
+            # Code and quotes
+            'code', 'blockquote', 'code-block',
+            
+            # Links and media
+            'link', 'image', 'embed', 'document-link',
+            
+            # Tables
+            'table', 'table-row', 'table-cell',
+            
+            # Font controls
+            'fontfamily', 'fontsize', 'fontcolor', 'bgcolor',
+            
+            # Other
+            'hr', 'undo', 'redo',
+        ],
+        blank=True,
+        help_text="Main content of the blog post"
+    )
     
     technologies = models.ManyToManyField(
-        'Technology', 
+        Technology,
         blank=True,
         related_name='blog_posts',
         help_text="Technologies mentioned in this post"
     )
     
     tags = ClusterTaggableManager(
-        through=BlogPageTag, 
+        through=BlogPageTag,
         blank=True,
         verbose_name="Tags",
         help_text="Add tags to categorize this post"
@@ -111,20 +135,48 @@ class BlogPage(Page):
         blank=True,
         on_delete=models.SET_NULL,
         related_name='+',
-        help_text="Featured image for this post"
+        help_text="Featured image for this post (1200x630 recommended)"
     )
     
     likes = models.ManyToManyField(
         User,
-        related_name='liked_posts',  # Fixed typo from 'liked_post' to 'liked_posts'
+        related_name='liked_posts',
         blank=True
+    )
+    
+    featured = models.BooleanField(
+        default=False,
+        help_text="Feature this post on the homepage"
+    )
+    
+    read_time = models.PositiveIntegerField(
+        "Estimated read time (minutes)",
+        default=5,
+        help_text="Estimated time to read this post"
+    )
+    
+    # SEO fields
+    seo_title = models.CharField(
+        max_length=60,
+        blank=True,
+        verbose_name="SEO title",
+        help_text="Optional. The name of the page displayed on search engine results (50-60 chars)"
+    )
+    
+    search_description = models.TextField(
+        blank=True,
+        verbose_name="SEO description",
+        help_text="Optional. The description that will appear under the title in search engine results (50-160 chars)"
     )
     
     content_panels = Page.content_panels + [
         MultiFieldPanel([
             FieldPanel('date'),
+            FieldPanel('updated_date'),
+            FieldPanel('featured'),
+            FieldPanel('read_time'),
             FieldPanel('intro'),
-            FieldPanel('cover_image'),
+            ImageChooserPanel('cover_image'),
         ], heading="Basic Information"),
         
         FieldPanel('body'),
@@ -137,39 +189,62 @@ class BlogPage(Page):
         InlinePanel('post_comments', label="Comments"),
     ]
     
-    # Use the existing promote_panels from Page and extend if needed
     promote_panels = [
-        MultiFieldPanel(Page.promote_panels, heading="SEO and social metadata"),
+        MultiFieldPanel([
+            FieldPanel('seo_title'),
+            FieldPanel('search_description'),
+            FieldPanel('slug'),
+        ], heading="SEO Settings"),
+        MultiFieldPanel(Page.promote_panels, heading="Social Media"),
+    ]
+    
+    search_fields = Page.search_fields + [
+        index.SearchField('intro'),
+        index.SearchField('body'),
+        index.FilterField('date'),
+        index.FilterField('featured'),
     ]
     
     def total_likes(self):
+        """Return the total number of likes for this post"""
         return self.likes.count()
     
     def get_absolute_url(self):
+        """Get canonical URL for the post"""
         return self.full_url
     
-    def get_related_posts(self):
+    def get_related_posts(self, count=3):
         """Get related posts by tags or technologies"""
         from .models import BlogPage
         return BlogPage.objects.live().filter(
             models.Q(tags__in=self.tags.all()) | 
             models.Q(technologies__in=self.technologies.all())
-        ).exclude(pk=self.pk).distinct()[:3]
+        ).exclude(pk=self.pk).distinct()[:count]
     
     def get_context(self, request, *args, **kwargs):
+        """Add additional context to the template"""
         context = super().get_context(request, *args, **kwargs)
         context.update({
-            'comments': self.post_comments.filter(parent__isnull=True).order_by('-created_at'),
+            'comments': self.post_comments.filter(approved=True, parent__isnull=True).order_by('-created_at'),
             'related_posts': self.get_related_posts(),
             'total_likes': self.total_likes(),
+            'is_owner': request.user == self.owner,
         })
         return context
+    
+    def save(self, *args, **kwargs):
+        """Custom save logic"""
+        if not self.search_description and self.intro:
+            self.search_description = self.intro[:160]
+        super().save(*args, **kwargs)
     
     class Meta:
         verbose_name = "Blog Post"
         verbose_name_plural = "Blog Posts"
         ordering = ['-date']
-
+        permissions = [
+            ("can_feature_post", "Can feature post"),
+        ]
 class BlogIndexPage(Page):
     intro = RichTextField(blank=True)
     
