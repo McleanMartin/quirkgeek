@@ -83,26 +83,12 @@
         </div>
     </div>
 
-    <!-- Author Bio -->
-    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 mb-12">
-        <div class="flex items-center space-x-4 mb-4">
-            {% if page.owner.wagtail_userprofile.avatar %}
-            <img src="{{ page.owner.wagtail_userprofile.avatar.url }}" alt="{{ page.owner.username }}" 
-                 class="w-16 h-16 rounded-full">
-            {% else %}
-            <div class="w-16 h-16 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                <span class="text-xl text-gray-600 dark:text-gray-300">{{ page.owner.username|first|upper }}</span>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
     <!-- Comments Section -->
     <div class="mb-12">
         <h2 class="text-2xl font-bold mb-6">Comments ({{ page.post_comments.count }})</h2>
         
         {% if request.user.is_authenticated %}
-        <form class="mb-8" method="POST" action="{% url 'add_comment' page.id %}">
+        <form class="mb-8" method="POST" action="{% url 'add_comment' page.id %}" id="comment-form">
             {% csrf_token %}
             <div class="flex space-x-4">
                 {% if request.user.profile.avatar %}
@@ -114,19 +100,28 @@
                 </div>
                 {% endif %}
                 <div class="flex-1">
-                    <textarea name="text" rows="3" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white" placeholder="Add a comment..."></textarea>
-                    <button type="submit" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">Post Comment</button>
+                    <textarea name="text" rows="3" 
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white" 
+                        placeholder="Add a comment..."
+                        required></textarea>
+                    <button type="submit" 
+                        class="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                        Post Comment
+                    </button>
                 </div>
             </div>
         </form>
         {% else %}
         <div class="text-center py-6 border border-gray-200 dark:border-gray-700 rounded-lg">
             <p class="mb-4">Want to join the discussion?</p>
-            <a href="{% url 'account_login' %}?next={{ request.path }}" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">Log in to comment</a>
+            <a href="{% url 'account_login' %}?next={{ request.path }}" 
+               class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                Log in to comment
+            </a>
         </div>
         {% endif %}
 
-        <div class="space-y-6">
+        <div class="space-y-6" id="comments-list">
             {% for comment in page.post_comments.all %}
             <div class="flex space-x-4">
                 {% if comment.user.profile.avatar %}
@@ -137,7 +132,7 @@
                     <span class="text-gray-600 dark:text-gray-300">{{ comment.user.username|first|upper }}</span>
                 </div>
                 {% endif %}
-                <div>
+                <div class="flex-1">
                     <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
                         <div class="flex justify-between items-center mb-2">
                             <span class="font-bold">{{ comment.user.username }}</span>
@@ -255,20 +250,64 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Copy link functionality
-    document.querySelector('[aria-label="Copy link"]').addEventListener('click', function() {
-        const url = window.location.href;
-        navigator.clipboard.writeText(url);
-        
-        const tooltip = document.createElement('div');
-        tooltip.textContent = 'Link copied!';
-        tooltip.className = 'absolute bg-gray-800 text-white px-2 py-1 rounded text-sm';
-        this.appendChild(tooltip);
-        
-        setTimeout(() => {
-            tooltip.remove();
-        }, 2000);
-    });
+    // Handle comment form submission with HTMX
+    const commentForm = document.getElementById('comment-form');
+    if (commentForm) {
+        commentForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Create new comment element
+                    const commentsList = document.getElementById('comments-list');
+                    const emptyMessage = commentsList.querySelector('p');
+                    if (emptyMessage) {
+                        emptyMessage.remove();
+                    }
+                    
+                    const commentElement = document.createElement('div');
+                    commentElement.className = 'flex space-x-4';
+                    commentElement.innerHTML = `
+                        <div class="flex space-x-4">
+                            ${data.user_avatar ? 
+                                `<img src="${data.user_avatar}" alt="${data.username}" class="w-10 h-10 rounded-full flex-shrink-0">` : 
+                                `<div class="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center flex-shrink-0">
+                                    <span class="text-gray-600 dark:text-gray-300">${data.username[0].toUpperCase()}</span>
+                                </div>`
+                            }
+                            <div class="flex-1">
+                                <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="font-bold">${data.username}</span>
+                                        <span class="text-sm text-gray-500">Just now</span>
+                                    </div>
+                                    <p class="text-gray-700 dark:text-gray-300">${data.text}</p>
+                                </div>
+                                <div class="flex items-center mt-2 space-x-4 text-sm">
+                                    <button class="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition">
+                                        <i class="far fa-heart"></i>
+                                        <span>0</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    commentsList.prepend(commentElement);
+                    this.reset();
+                }
+            });
+        });
+    }
 });
 </script>
 {% endblock %}
