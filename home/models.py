@@ -7,11 +7,12 @@ from modelcluster.contrib.taggit import ClusterTaggableManager
 from taggit.models import TaggedItemBase
 from wagtail.models import Page
 from wagtail.fields import RichTextField, StreamField
-from wagtail.admin.panels import FieldPanel, MultiFieldPanel, InlinePanel
+from wagtail.admin.panels import FieldPanel, MultiFieldPanel, InlinePanel,TabbedInterface, ObjectList
 from wagtail import blocks
 from wagtail.images.models import Image
-from wagtail.snippets.models import register_snippet
 from django.core.paginator import Paginator
+from wagtail.snippets.models import register_snippet
+from wagtail.search import index
 
 User = get_user_model()
 
@@ -208,24 +209,46 @@ class Comment(models.Model):
 # ============== SNIPPETS ==============
 
 @register_snippet
-class Technology(models.Model):
-    name = models.CharField(max_length=255)
+class Technology(index.Indexed, models.Model):
+    name = models.CharField(max_length=255, unique=True)
     icon_class = models.CharField(
-        max_length=255, 
-        blank=True, 
+        max_length=255,
+        blank=True,
         help_text="Font Awesome class (e.g., 'fab fa-python')"
     )
+    description = RichTextField(blank=True, null=True)
+    documentation_url = models.URLField(blank=True)
+    is_active = models.BooleanField(default=True)
     
-    panels = [
+    # Search configuration
+    search_fields = [
+        index.SearchField('name', partial_match=True),
+        index.FilterField('is_active'),
+    ]
+    
+    # Panels configuration
+    general_panels = [
         FieldPanel('name'),
         FieldPanel('icon_class'),
+        FieldPanel('is_active'),
     ]
+    
+    info_panels = [
+        FieldPanel('description'),
+        FieldPanel('documentation_url'),
+    ]
+    
+    edit_handler = TabbedInterface([
+        ObjectList(general_panels, heading='General'),
+        ObjectList(info_panels, heading='Info'),
+    ])
     
     def __str__(self):
         return self.name
     
     class Meta:
         verbose_name_plural = "Technologies"
+        ordering = ['name']
 
 # ============== USER PROFILES ==============
 
