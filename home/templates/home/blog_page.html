@@ -57,7 +57,11 @@
                 {% if request.user.is_authenticated %}
                 <button class="flex items-center space-x-1 text-gray-600 dark:text-gray-400 hover:text-red-500 transition"
                         hx-post="{% url 'toggle_like' page.id %}"
-                        hx-target=".like-section">
+                        hx-target=".like-section"
+                        hx-swap="innerHTML"
+                        _="on click toggle .text-red-500 on <i.fa-heart/> in me
+                           then toggle .fas on <i.fa-heart/> in me
+                           then toggle .far on <i.fa-heart/> in me">
                     <i class="{% if request.user in page.likes.all %}fas text-red-500{% else %}far{% endif %} fa-heart"></i>
                     <span class="like-count">{{ page.likes.count }}</span>
                 </button>
@@ -70,13 +74,19 @@
             </div>
             
             <div class="flex space-x-4">
-                <button class="text-gray-600 dark:text-gray-400 hover:text-blue-500 transition">
+                <button class="text-gray-600 dark:text-gray-400 hover:text-blue-500 transition"
+                        _="on click window.open('https://twitter.com/intent/tweet?text=Check out this post: {{ page.title }}&url={{ request.build_absolute_uri }}', '_blank')">
                     <i class="fab fa-twitter"></i>
                 </button>
-                <button class="text-gray-600 dark:text-gray-400 hover:text-blue-700 transition">
+                <button class="text-gray-600 dark:text-gray-400 hover:text-blue-700 transition"
+                        _="on click window.open('https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri }}&title={{ page.title }}', '_blank')">
                     <i class="fab fa-linkedin"></i>
                 </button>
-                <button class="text-gray-600 dark:text-gray-400 hover:text-gray-800 transition">
+                <button class="text-gray-600 dark:text-gray-400 hover:text-gray-800 transition"
+                        _="on click navigator.clipboard.writeText('{{ request.build_absolute_uri }}')
+                           then add .text-green-500 to me
+                           then wait 2s
+                           then remove .text-green-500 from me">
                     <i class="fas fa-link"></i>
                 </button>
             </div>
@@ -85,10 +95,14 @@
 
     <!-- Comments Section -->
     <div class="mb-12">
-        <h2 class="text-2xl font-bold mb-6">Comments ({{ page.post_comments.count }})</h2>
+        <h2 class="text-2xl font-bold mb-6">Comments (<span id="comment-count">{{ page.post_comments.count }}</span>)</h2>
         
         {% if request.user.is_authenticated %}
-        <form class="mb-8" method="POST" action="{% url 'add_comment' page.id %}" id="comment-form">
+        <form class="mb-8" 
+              hx-post="{% url 'add_comment' page.id %}" 
+              hx-target="#comments-list" 
+              hx-swap="afterbegin"
+              _="on htmx:afterRequest reset() me">
             {% csrf_token %}
             <div class="flex space-x-4">
                 {% if request.user.profile.avatar %}
@@ -105,7 +119,8 @@
                         placeholder="Add a comment..."
                         required></textarea>
                     <button type="submit" 
-                        class="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                        class="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+                        _="on click if my previousElementSibling.value is empty then preventDefault()">
                         Post Comment
                     </button>
                 </div>
@@ -121,7 +136,11 @@
         </div>
         {% endif %}
 
-        <div class="space-y-6" id="comments-list">
+        <div class="space-y-6" id="comments-list" 
+             _="on htmx:afterSwap from #comment-form
+                set commentCount to parseInt(me.firstElementChild.textContent)
+                increment commentCount
+                put commentCount into me.firstElementChild.textContent">
             {% for comment in page.post_comments.all %}
             <div class="flex space-x-4">
                 {% if comment.user.profile.avatar %}
@@ -144,9 +163,13 @@
                         {% if request.user.is_authenticated %}
                         <button class="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition"
                                 hx-post="{% url 'toggle_comment_like' comment.id %}"
-                                hx-target=".comment-like-{{ comment.id }}">
+                                hx-target="closest div"
+                                hx-swap="outerHTML"
+                                _="on click toggle .text-red-500 on <i.fa-heart/> in me
+                                   then toggle .fas on <i.fa-heart/> in me
+                                   then toggle .far on <i.fa-heart/> in me">
                             <i class="{% if request.user in comment.likes.all %}fas text-red-500{% else %}far{% endif %} fa-heart"></i>
-                            <span class="comment-like-count-{{ comment.id }}">{{ comment.likes.count }}</span>
+                            <span>{{ comment.likes.count }}</span>
                         </button>
                         {% else %}
                         <a href="{% url 'account_login' %}?next={{ request.path }}" class="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition">
@@ -222,92 +245,54 @@
     .dark .prose code {
         background-color: #1f2937;
     }
+    
+    /* HTMX loading indicators */
+    [hx-post], [hx-get] {
+        transition: opacity 0.2s ease;
+    }
+    .htmx-request {
+        opacity: 0.7;
+        cursor: wait;
+    }
+    .htmx-indicator {
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    .htmx-request .htmx-indicator {
+        opacity: 1;
+    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
+<!-- Load HTMX from CDN -->
+<script src="https://unpkg.com/htmx.org@1.9.6"></script>
+<!-- Load Hyperscript from CDN -->
+<script src="https://unpkg.com/hyperscript.org@0.9.11"></script>
+
 <script>
+// Add some animations for visual feedback
 document.addEventListener('DOMContentLoaded', function() {
-    // Like functionality
-    document.querySelectorAll('[hx-post^="/toggle_like"]').forEach(button => {
-        button.addEventListener('click', function() {
-            const icon = this.querySelector('i');
+    // Heart animation for likes
+    document.body.addEventListener('click', function(e) {
+        if (e.target.closest('[hx-post*="toggle_like"], [hx-post*="toggle_comment_like"]')) {
+            const icon = e.target.closest('button').querySelector('i');
             icon.classList.add('animate-ping');
             setTimeout(() => {
                 icon.classList.remove('animate-ping');
             }, 500);
-        });
+        }
     });
-
-    // Comment like functionality
-    document.querySelectorAll('[hx-post^="/toggle_comment_like"]').forEach(button => {
-        button.addEventListener('click', function() {
-            const icon = this.querySelector('i');
-            icon.classList.add('animate-ping');
-            setTimeout(() => {
-                icon.classList.remove('animate-ping');
-            }, 500);
-        });
+    
+    // Smooth scroll to comments after posting
+    document.body.addEventListener('htmx:afterSwap', function(e) {
+        if (e.detail.target.id === 'comments-list') {
+            const firstComment = document.querySelector('#comments-list > div');
+            if (firstComment) {
+                firstComment.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
     });
-
-    // Handle comment form submission with HTMX
-    const commentForm = document.getElementById('comment-form');
-    if (commentForm) {
-        commentForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            
-            fetch(this.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Create new comment element
-                    const commentsList = document.getElementById('comments-list');
-                    const emptyMessage = commentsList.querySelector('p');
-                    if (emptyMessage) {
-                        emptyMessage.remove();
-                    }
-                    
-                    const commentElement = document.createElement('div');
-                    commentElement.className = 'flex space-x-4';
-                    commentElement.innerHTML = `
-                        <div class="flex space-x-4">
-                            ${data.user_avatar ? 
-                                `<img src="${data.user_avatar}" alt="${data.username}" class="w-10 h-10 rounded-full flex-shrink-0">` : 
-                                `<div class="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center flex-shrink-0">
-                                    <span class="text-gray-600 dark:text-gray-300">${data.username[0].toUpperCase()}</span>
-                                </div>`
-                            }
-                            <div class="flex-1">
-                                <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
-                                    <div class="flex justify-between items-center mb-2">
-                                        <span class="font-bold">${data.username}</span>
-                                        <span class="text-sm text-gray-500">Just now</span>
-                                    </div>
-                                    <p class="text-gray-700 dark:text-gray-300">${data.text}</p>
-                                </div>
-                                <div class="flex items-center mt-2 space-x-4 text-sm">
-                                    <button class="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition">
-                                        <i class="far fa-heart"></i>
-                                        <span>0</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    
-                    commentsList.prepend(commentElement);
-                    this.reset();
-                }
-            });
-        });
-    }
 });
 </script>
 {% endblock %}
