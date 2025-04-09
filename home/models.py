@@ -1,4 +1,5 @@
 from django.db import models
+from django import forms  
 from django.contrib.auth import get_user_model
 from django.dispatch import receiver
 from django.db.models.signals import post_save
@@ -203,7 +204,7 @@ class BlogPage(Page):
         verbose_name = "Blog Post"
         verbose_name_plural = "Blog Posts"
         ordering = ['-date']
-        
+
 class BlogIndexPage(Page):
     intro = RichTextField(blank=True)
     
