@@ -11,12 +11,12 @@ from home.views import toggle_like,toggle_comment_like,add_comment
 
 urlpatterns = [
     path("cms/", include(wagtailadmin_urls)),
+    path('accounts/', include('allauth.urls')),
     path("documents/", include(wagtaildocs_urls)),
     path("search/", search_views.search, name="search"),
-    path('toggle_like/<int:post_id>/', views.toggle_like, name='toggle_like'),
-    path('toggle_comment_like/<int:comment_id>/', views.toggle_comment_like, name='toggle_comment_like'),
+    path('toggle-like/<int:post_id>/', toggle_like, name='toggle_like'),
     path('add-comment/<int:post_id>/', add_comment, name='add_comment'),
-    path('accounts/', include('allauth.urls')),
+    path('toggle-comment-like/<int:comment_id>/', toggle_comment_like, name='toggle_comment_like'),
 ]
 
 
