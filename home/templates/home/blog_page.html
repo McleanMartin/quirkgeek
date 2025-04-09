@@ -277,7 +277,7 @@
 <script src="https://unpkg.com/hyperscript.org@0.9.11"></script>
 
 <script>
-// Additional fallback JavaScript if needed
+// Additional fallback JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     // Fallback for copy link button
     document.querySelectorAll('.copy-link').forEach(button => {
@@ -291,6 +291,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 2000);
                 });
         });
+    });
+    
+    // Ensure HTMX requests include CSRF token
+    document.body.addEventListener('htmx:configRequest', function(evt) {
+        evt.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
     });
 });
 </script>
