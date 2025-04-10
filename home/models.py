@@ -17,8 +17,6 @@ from wagtail.search import index
 
 User = get_user_model()
 
-# ============== CORE MODELS ==============
-
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 class HomePage(Page):
@@ -67,7 +65,6 @@ class HomePage(Page):
         context['technologies'] = Technology.objects.all()[:8]
         return context
 
-# ============== BLOG MODELS ==============
 
 class BlogPageTag(TaggedItemBase):
     content_object = ParentalKey(
@@ -90,6 +87,32 @@ class BlogPage(Page):
         'table', 'table-row', 'table-cell',
         'hr', 'undo', 'redo',
     ])
+    
+    content_blocks = StreamField([
+        ('code_snippet', blocks.StructBlock([
+            ('language', blocks.ChoiceBlock(choices=[
+                ('python', 'Python'),
+                ('javascript', 'JavaScript'),
+                ('html', 'HTML'),
+                ('css', 'CSS'),
+                ('bash', 'Bash/Shell'),
+            ])),
+            ('code', blocks.TextBlock()),
+        ], icon='code')),
+        ('terminal_command', blocks.StructBlock([
+            ('command', blocks.CharBlock()),
+            ('explanation', blocks.TextBlock(required=False)),
+        ], icon='cog')),
+        ('image_gallery', blocks.ListBlock(
+            blocks.StructBlock([
+                ('image', blocks.ImageChooserBlock()),
+                ('caption', blocks.CharBlock(required=False)),
+            ]),
+            icon='image'
+        )),
+        ('quote', blocks.BlockQuoteBlock()),
+        ('embed', blocks.RawHTMLBlock(icon='media')),
+    ], use_json_field=True, blank=True, null=True)
     
     technologies = models.ManyToManyField(
         'Technology', 
@@ -116,7 +139,7 @@ class BlogPage(Page):
     
     likes = models.ManyToManyField(
         User,
-        related_name='liked_posts',  # Fixed typo from 'liked_post' to 'liked_posts'
+        related_name='liked_posts',
         blank=True
     )
     
@@ -128,6 +151,7 @@ class BlogPage(Page):
         ], heading="Basic Information"),
         
         FieldPanel('body'),
+        FieldPanel('content_blocks'),
         
         MultiFieldPanel([
             FieldPanel('tags'),
@@ -137,38 +161,6 @@ class BlogPage(Page):
         InlinePanel('post_comments', label="Comments"),
     ]
     
-    # Use the existing promote_panels from Page and extend if needed
-    promote_panels = [
-        MultiFieldPanel(Page.promote_panels, heading="SEO and social metadata"),
-    ]
-    
-    def total_likes(self):
-        return self.likes.count()
-    
-    def get_absolute_url(self):
-        return self.full_url
-    
-    def get_related_posts(self):
-        """Get related posts by tags or technologies"""
-        from .models import BlogPage
-        return BlogPage.objects.live().filter(
-            models.Q(tags__in=self.tags.all()) | 
-            models.Q(technologies__in=self.technologies.all())
-        ).exclude(pk=self.pk).distinct()[:3]
-    
-    def get_context(self, request, *args, **kwargs):
-        context = super().get_context(request, *args, **kwargs)
-        context.update({
-            'comments': self.post_comments.filter(parent__isnull=True).order_by('-created_at'),
-            'related_posts': self.get_related_posts(),
-            'total_likes': self.total_likes(),
-        })
-        return context
-    
-    class Meta:
-        verbose_name = "Blog Post"
-        verbose_name_plural = "Blog Posts"
-        ordering = ['-date']
 
 class BlogIndexPage(Page):
     intro = RichTextField(blank=True)
@@ -182,8 +174,6 @@ class BlogIndexPage(Page):
         blog_posts = BlogPage.objects.live().order_by('-date')
         context['blog_posts'] = blog_posts
         return context
-
-# ============== PROJECT MODELS ==============
 
 class ProjectPage(Page):
     date = models.DateField("Project date")
