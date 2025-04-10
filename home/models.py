@@ -91,6 +91,9 @@ class BlogPage(Page):
     ])
     
     content_blocks = StreamField([
+        ('paragraph', blocks.RichTextBlock(features=[
+            'bold', 'italic', 'link', 'code'
+        ])),
         ('code_snippet', blocks.StructBlock([
             ('language', blocks.ChoiceBlock(choices=[
                 ('python', 'Python'),
@@ -98,24 +101,103 @@ class BlogPage(Page):
                 ('html', 'HTML'),
                 ('css', 'CSS'),
                 ('bash', 'Bash/Shell'),
-            ])),
+            ], default='python')),
             ('code', blocks.TextBlock()),
         ], icon='code')),
         ('terminal_command', blocks.StructBlock([
             ('command', blocks.CharBlock()),
             ('explanation', blocks.TextBlock(required=False)),
-        ], icon='cog')),
+        ], icon='terminal')),
         ('image_gallery', blocks.ListBlock(
             blocks.StructBlock([
-                ('image', ImageChooserBlock()),  # Using the imported ImageChooserBlock
+                ('image', ImageChooserBlock()),
                 ('caption', blocks.CharBlock(required=False)),
             ]),
-            icon='image'
+            icon='image',
+            label='Image Gallery'
         )),
-        ('quote', blocks.BlockQuoteBlock()),
+        ('quote', blocks.BlockQuoteBlock(icon='openquote')),
         ('embed', blocks.RawHTMLBlock(icon='media')),
     ], use_json_field=True, blank=True, null=True)
     
+    technologies = models.ManyToManyField(
+        'Technology', 
+        blank=True,
+        related_name='blog_posts',
+        help_text="Technologies mentioned in this post"
+    )
+    
+    tags = ClusterTaggableManager(
+        through=BlogPageTag, 
+        blank=True,
+        verbose_name="Tags",
+        help_text="Add tags to categorize this post"
+    )
+    
+    cover_image = models.ForeignKey(
+        'wagtailimages.Image',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='+',
+        help_text="Featured image for this post"
+    )
+    
+    likes = models.ManyToManyField(
+        User,
+        related_name='liked_posts',
+        blank=True
+    )
+    
+    content_panels = Page.content_panels + [
+        MultiFieldPanel([
+            FieldPanel('date'),
+            FieldPanel('intro'),
+            FieldPanel('cover_image'),
+        ], heading="Basic Information"),
+        
+        FieldPanel('body'),
+        FieldPanel('content_blocks'),
+        
+        MultiFieldPanel([
+            FieldPanel('tags'),
+            FieldPanel('technologies', widget=forms.CheckboxSelectMultiple),
+        ], heading="Categorization"),
+        
+        InlinePanel('post_comments', label="Comments"),
+    ]
+    
+    promote_panels = [
+        MultiFieldPanel(Page.promote_panels, heading="SEO and social metadata"),
+    ]
+    
+    def total_likes(self):
+        return self.likes.count()
+    
+    def get_absolute_url(self):
+        return self.full_url
+    
+    def get_related_posts(self):
+        """Get related posts by tags or technologies"""
+        from .models import BlogPage
+        return BlogPage.objects.live().filter(
+            models.Q(tags__in=self.tags.all()) | 
+            models.Q(technologies__in=self.technologies.all())
+        ).exclude(pk=self.pk).distinct()[:3]
+    
+    def get_context(self, request, *args, **kwargs):
+        context = super().get_context(request, *args, **kwargs)
+        context.update({
+            'comments': self.post_comments.filter(parent__isnull=True).order_by('-created_at'),
+            'related_posts': self.get_related_posts(),
+            'total_likes': self.total_likes(),
+        })
+        return context
+    
+    class Meta:
+        verbose_name = "Blog Post"
+        verbose_name_plural = "Blog Posts"
+        ordering = ['-date']
 
 class BlogIndexPage(Page):
     intro = RichTextField(blank=True)
