@@ -8,6 +8,7 @@ from modelcluster.contrib.taggit import ClusterTaggableManager
 from taggit.models import TaggedItemBase
 from wagtail.models import Page
 from wagtail.fields import RichTextField, StreamField
+from wagtail.images.blocks import ImageChooserBlock
 from wagtail.admin.panels import FieldPanel, MultiFieldPanel, InlinePanel,TabbedInterface, ObjectList
 from wagtail import blocks
 from wagtail.images.models import Image
@@ -73,6 +74,7 @@ class BlogPageTag(TaggedItemBase):
         on_delete=models.CASCADE
     )
 
+
 class BlogPage(Page):
     date = models.DateField("Post date")
     intro = models.CharField(max_length=250)
@@ -105,7 +107,7 @@ class BlogPage(Page):
         ], icon='cog')),
         ('image_gallery', blocks.ListBlock(
             blocks.StructBlock([
-                ('image', blocks.ImageChooserBlock()),
+                ('image', ImageChooserBlock()),  # Using the imported ImageChooserBlock
                 ('caption', blocks.CharBlock(required=False)),
             ]),
             icon='image'
@@ -113,53 +115,6 @@ class BlogPage(Page):
         ('quote', blocks.BlockQuoteBlock()),
         ('embed', blocks.RawHTMLBlock(icon='media')),
     ], use_json_field=True, blank=True, null=True)
-    
-    technologies = models.ManyToManyField(
-        'Technology', 
-        blank=True,
-        related_name='blog_posts',
-        help_text="Technologies mentioned in this post"
-    )
-    
-    tags = ClusterTaggableManager(
-        through=BlogPageTag, 
-        blank=True,
-        verbose_name="Tags",
-        help_text="Add tags to categorize this post"
-    )
-    
-    cover_image = models.ForeignKey(
-        'wagtailimages.Image',
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name='+',
-        help_text="Featured image for this post"
-    )
-    
-    likes = models.ManyToManyField(
-        User,
-        related_name='liked_posts',
-        blank=True
-    )
-    
-    content_panels = Page.content_panels + [
-        MultiFieldPanel([
-            FieldPanel('date'),
-            FieldPanel('intro'),
-            FieldPanel('cover_image'),
-        ], heading="Basic Information"),
-        
-        FieldPanel('body'),
-        FieldPanel('content_blocks'),
-        
-        MultiFieldPanel([
-            FieldPanel('tags'),
-            FieldPanel('technologies', widget=forms.CheckboxSelectMultiple),
-        ], heading="Categorization"),
-        
-        InlinePanel('post_comments', label="Comments"),
-    ]
     
 
 class BlogIndexPage(Page):
