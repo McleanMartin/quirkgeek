@@ -64,7 +64,9 @@
 
     <!-- Article Content -->
     <div class="prose dark:prose-invert prose-lg max-w-none mb-16">
-        {{ page.body|richtext}}
+        {% for block in page.content %}
+            {% include_block block %}
+        {% endfor %}
     </div>
 
     <!-- Article Footer -->

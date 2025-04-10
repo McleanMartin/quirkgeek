@@ -78,21 +78,17 @@ class BlogPageTag(TaggedItemBase):
 class BlogPage(Page):
     date = models.DateField("Post date")
     intro = models.CharField(max_length=250)
-    body = RichTextField(features=[
-        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'bold', 'italic', 'underline', 'strikethrough',
-        'superscript', 'subscript',
-        'left', 'center', 'right', 'justify',
-        'ol', 'ul', 'dl',
-        'code', 'blockquote', 'code-block',
-        'link', 'image', 'embed', 'document-link',
-        'table', 'table-row', 'table-cell',
-        'hr', 'undo', 'redo',
-    ])
     
-    content_blocks = StreamField([
+    content = StreamField([
+        ('heading', blocks.CharBlock(form_classname="title")),
         ('paragraph', blocks.RichTextBlock(features=[
-            'bold', 'italic', 'link', 'code'
+            'bold', 'italic', 'underline', 'strikethrough',
+            'h2', 'h3', 'h4',
+            'ol', 'ul', 'hr',
+            'link', 'document-link',
+            'code', 'blockquote',
+            'superscript', 'subscript',
+            'strikethrough',
         ])),
         ('code_snippet', blocks.StructBlock([
             ('language', blocks.ChoiceBlock(choices=[
@@ -101,13 +97,12 @@ class BlogPage(Page):
                 ('html', 'HTML'),
                 ('css', 'CSS'),
                 ('bash', 'Bash/Shell'),
+                ('sql', 'SQL'),
             ], default='python')),
             ('code', blocks.TextBlock()),
+            ('caption', blocks.CharBlock(required=False)),
         ], icon='code')),
-        ('terminal_command', blocks.StructBlock([
-            ('command', blocks.CharBlock()),
-            ('explanation', blocks.TextBlock(required=False)),
-        ], icon='terminal')),
+        ('image', ImageChooserBlock()),
         ('image_gallery', blocks.ListBlock(
             blocks.StructBlock([
                 ('image', ImageChooserBlock()),
@@ -118,7 +113,14 @@ class BlogPage(Page):
         )),
         ('quote', blocks.BlockQuoteBlock(icon='openquote')),
         ('embed', blocks.RawHTMLBlock(icon='media')),
-    ], use_json_field=True, blank=True, null=True)
+        ('table', blocks.TableBlock()),
+        ('alert', blocks.ChoiceBlock(choices=[
+            ('info', 'Information'),
+            ('warning', 'Warning'),
+            ('danger', 'Danger'),
+            ('success', 'Success'),
+        ], icon='warning')),
+    ], use_json_field=True, blank=True)
     
     technologies = models.ManyToManyField(
         'Technology', 
@@ -156,8 +158,7 @@ class BlogPage(Page):
             FieldPanel('cover_image'),
         ], heading="Basic Information"),
         
-        FieldPanel('body'),
-        FieldPanel('content_blocks'),
+        FieldPanel('content'),
         
         MultiFieldPanel([
             FieldPanel('tags'),
