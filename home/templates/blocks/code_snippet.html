@@ -1,0 +1,10 @@
+<div class="my-6 rounded-lg overflow-hidden">
+    <div class="bg-gray-800 text-gray-100 p-4 overflow-x-auto">
+        <pre><code class="language-{{ value.language }}">{{ value.code }}</code></pre>
+    </div>
+    {% if value.caption %}
+    <div class="bg-gray-100 px-4 py-2 text-sm text-gray-600">
+        {{ value.caption }}
+    </div>
+    {% endif %}
+</div>

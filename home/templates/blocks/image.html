@@ -1,0 +1,10 @@
+<div class="my-8">
+    <div class="rounded-lg overflow-hidden shadow-md">
+        {% image value width-800 class="w-full h-auto" %}
+    </div>
+    {% if value.caption %}
+    <div class="mt-2 text-sm text-center text-gray-500">
+        {{ value.caption }}
+    </div>
+    {% endif %}
+</div>

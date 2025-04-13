@@ -1,0 +1,14 @@
+<div class="my-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        {% for item in value %}
+        <div class="rounded-lg overflow-hidden shadow-sm border border-gray-200">
+            {% image item.image fill-400x300 class="w-full h-48 object-cover" %}
+            {% if item.caption %}
+            <div class="p-3 text-sm text-gray-600">
+                {{ item.caption }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
