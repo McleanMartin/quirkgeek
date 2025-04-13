@@ -113,7 +113,6 @@ class BlogPage(Page):
         )),
         ('quote', blocks.BlockQuoteBlock(icon='openquote')),
         ('embed', blocks.RawHTMLBlock(icon='media')),
-        ('table', blocks.TableBlock()),
         ('alert', blocks.ChoiceBlock(choices=[
             ('info', 'Information'),
             ('warning', 'Warning'),
