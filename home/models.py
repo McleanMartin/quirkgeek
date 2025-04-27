@@ -183,7 +183,7 @@ class BlogPage(Page):
     def get_related_posts(self):
         """Get related posts by tags or technologies"""
         return BlogPage.objects.live().filter(
-            models.Q(tags__in=self.tags.all()) | 
+            models.Q(tags__in=self.tags.all())
             # models.Q(technologies__in=self.technologies.all())
         ).exclude(pk=self.pk).distinct()[:3]
     
