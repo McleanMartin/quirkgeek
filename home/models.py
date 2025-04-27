@@ -184,7 +184,7 @@ class BlogPage(Page):
         """Get related posts by tags or technologies"""
         return BlogPage.objects.live().filter(
             models.Q(tags__in=self.tags.all()) | 
-            models.Q(technologies__in=self.technologies.all())
+            # models.Q(technologies__in=self.technologies.all())
         ).exclude(pk=self.pk).distinct()[:3]
     
     def get_context(self, request, *args, **kwargs):
