@@ -1,5 +1,6 @@
 from django.db import models
-from django import forms  
+from django import forms
+from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from django.dispatch import receiver
 from django.db.models.signals import post_save
@@ -9,16 +10,20 @@ from taggit.models import TaggedItemBase
 from wagtail.models import Page
 from wagtail.fields import RichTextField, StreamField
 from wagtail.images.blocks import ImageChooserBlock
-from wagtail.admin.panels import FieldPanel, MultiFieldPanel, InlinePanel,TabbedInterface, ObjectList
+from wagtail.admin.panels import (
+    FieldPanel, 
+    MultiFieldPanel, 
+    InlinePanel,
+    TabbedInterface, 
+    ObjectList
+)
 from wagtail import blocks
 from wagtail.images.models import Image
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from wagtail.snippets.models import register_snippet
 from wagtail.search import index
 
 User = get_user_model()
-
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 class HomePage(Page):
     author_name = models.CharField(max_length=100, default="Developer")
@@ -36,7 +41,6 @@ class HomePage(Page):
         ('terminal_command', blocks.CharBlock()),
     ], use_json_field=True, blank=True, null=True)
     
-    
     content_panels = Page.content_panels + [
         FieldPanel('author_name'),
         FieldPanel('intro'),
@@ -44,13 +48,12 @@ class HomePage(Page):
         FieldPanel('body'),
     ]
     
+    subpage_types = ['BlogPage', 'BlogIndexPage', 'ProjectPage', 'ProjectIndexPage']
+    
     def get_context(self, request):
         context = super().get_context(request)
-        
-        # Get all live blog posts ordered by date
         all_posts = BlogPage.objects.live().order_by('-date')
         
-        # Pagination
         page = request.GET.get('page')
         paginator = Paginator(all_posts, 6)
         
@@ -119,7 +122,7 @@ class BlogPage(Page):
             ('danger', 'Danger'),
             ('success', 'Success'),
         ], icon='warning')),
-    ], use_json_field=True, blank=True)
+    ], use_json_field=True, blank=True, null=True)
     
     tags = ClusterTaggableManager(
         through=BlogPageTag, 
@@ -163,6 +166,14 @@ class BlogPage(Page):
         MultiFieldPanel(Page.promote_panels, heading="SEO and social metadata"),
     ]
     
+    parent_page_types = ['HomePage', 'BlogIndexPage']
+    subpage_types = []
+    
+    def clean(self):
+        super().clean()
+        if not self.get_parent():
+            raise ValidationError("This page must have a parent page")
+    
     def total_likes(self):
         return self.likes.count()
     
@@ -171,7 +182,6 @@ class BlogPage(Page):
     
     def get_related_posts(self):
         """Get related posts by tags or technologies"""
-        from .models import BlogPage
         return BlogPage.objects.live().filter(
             models.Q(tags__in=self.tags.all()) | 
             models.Q(technologies__in=self.technologies.all())
@@ -191,6 +201,7 @@ class BlogPage(Page):
         verbose_name_plural = "Blog Posts"
         ordering = ['-date']
 
+
 class BlogIndexPage(Page):
     intro = RichTextField(blank=True)
     
@@ -198,17 +209,20 @@ class BlogIndexPage(Page):
         FieldPanel('intro'),
     ]
     
+    parent_page_types = ['HomePage']
+    subpage_types = ['BlogPage']
+    
     def get_context(self, request, *args, **kwargs):
         context = super().get_context(request, *args, **kwargs)
         blog_posts = BlogPage.objects.live().order_by('-date')
         context['blog_posts'] = blog_posts
         return context
 
+
 class ProjectPage(Page):
     date = models.DateField("Project date")
     summary = models.CharField(max_length=250)
     body = RichTextField(features=['h2', 'h3', 'bold', 'italic', 'link', 'code'])
-    # technologies = models.ManyToManyField('Technology', blank=True)
     featured = models.BooleanField(default=False)
     github_url = models.URLField(blank=True)
     live_url = models.URLField(blank=True)
@@ -224,12 +238,15 @@ class ProjectPage(Page):
         FieldPanel('date'),
         FieldPanel('summary'),
         FieldPanel('body'),
-        # FieldPanel('technologies'),
         FieldPanel('featured'),
         FieldPanel('screenshot'),
         FieldPanel('github_url'),
         FieldPanel('live_url'),
     ]
+    
+    parent_page_types = ['HomePage', 'ProjectIndexPage']
+    subpage_types = []
+
 
 class ProjectIndexPage(Page):
     intro = RichTextField(blank=True)
@@ -238,12 +255,14 @@ class ProjectIndexPage(Page):
         FieldPanel('intro'),
     ]
     
+    parent_page_types = ['HomePage']
+    subpage_types = ['ProjectPage']
+    
     def get_context(self, request, *args, **kwargs):
         context = super().get_context(request, *args, **kwargs)
         context['projects'] = ProjectPage.objects.live().order_by('-date')
         return context
 
-# ============== SOCIAL FEATURES ==============
 
 class Comment(models.Model):
     blog_page = ParentalKey(
@@ -283,7 +302,6 @@ class Comment(models.Model):
     def total_replies(self):
         return self.replies.count()
 
-# ============== SNIPPETS ==============
 
 @register_snippet
 class Technology(index.Indexed, models.Model):
@@ -297,13 +315,11 @@ class Technology(index.Indexed, models.Model):
     documentation_url = models.URLField(blank=True)
     is_active = models.BooleanField(default=True)
     
-    # Search configuration
     search_fields = [
         index.SearchField('name', partial_match=True),
         index.FilterField('is_active'),
     ]
     
-    # Panels configuration
     general_panels = [
         FieldPanel('name'),
         FieldPanel('icon_class'),
@@ -327,7 +343,6 @@ class Technology(index.Indexed, models.Model):
         verbose_name_plural = "Technologies"
         ordering = ['name']
 
-# ============== USER PROFILES ==============
 
 class UserProfile(models.Model):
     user = models.OneToOneField(
@@ -353,11 +368,14 @@ class UserProfile(models.Model):
             return self.avatar.url
         return '/static/images/default-avatar.jpg'
 
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         UserProfile.objects.create(user=instance)
 
+
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
-    instance.profile.save()
+    if hasattr(instance, 'profile'):
+        instance.profile.save()
