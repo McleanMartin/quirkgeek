@@ -62,10 +62,11 @@
     </figure>
     {% endif %}
 
-    <!-- Article Content -->
     <div class="prose dark:prose-invert prose-lg max-w-none mb-16">
         {% for block in page.content %}
-            {% include_block block %}
+            <div class="my-6">  <!-- Universal margin for all blocks -->
+                {% include_block block %}
+            </div>
         {% endfor %}
     </div>
 
