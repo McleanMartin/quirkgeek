@@ -208,7 +208,7 @@ class ProjectPage(Page):
     date = models.DateField("Project date")
     summary = models.CharField(max_length=250)
     body = RichTextField(features=['h2', 'h3', 'bold', 'italic', 'link', 'code'])
-    technologies = models.ManyToManyField('Technology', blank=True)
+    # technologies = models.ManyToManyField('Technology', blank=True)
     featured = models.BooleanField(default=False)
     github_url = models.URLField(blank=True)
     live_url = models.URLField(blank=True)
@@ -224,7 +224,7 @@ class ProjectPage(Page):
         FieldPanel('date'),
         FieldPanel('summary'),
         FieldPanel('body'),
-        FieldPanel('technologies'),
+        # FieldPanel('technologies'),
         FieldPanel('featured'),
         FieldPanel('screenshot'),
         FieldPanel('github_url'),
