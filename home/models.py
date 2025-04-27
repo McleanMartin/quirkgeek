@@ -121,13 +121,6 @@ class BlogPage(Page):
         ], icon='warning')),
     ], use_json_field=True, blank=True)
     
-    technologies = models.ManyToManyField(
-        'Technology', 
-        blank=True,
-        related_name='blog_posts',
-        help_text="Technologies mentioned in this post"
-    )
-    
     tags = ClusterTaggableManager(
         through=BlogPageTag, 
         blank=True,
@@ -161,7 +154,6 @@ class BlogPage(Page):
         
         MultiFieldPanel([
             FieldPanel('tags'),
-            FieldPanel('technologies', widget=forms.CheckboxSelectMultiple),
         ], heading="Categorization"),
         
         InlinePanel('post_comments', label="Comments"),
